@@ -1,0 +1,35 @@
+@model List<(SessionDemo.Services.PendingTransferRequest, string)>
+@{
+    ViewData["Title"] = "Dispatched transactions";
+}
+<h3>@ViewData["Title"]</h3>
+
+<p>Transactions that were dispatched from originator after beneficiary's approval.</p>
+
+<table id="myTable" class="table" cellspacing="0">
+    <thead>
+    <tr>
+        <td>Originator Name</td>
+        <td>Country</td>
+        <td>Date Of Birth</td>
+        <td>Asset Type</td>
+        <td>Amount</td>
+        <td>Transaction Id</td>
+        <td>Beneficiary Name</td>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var keyValuePair in Model)
+    {
+        <tr>
+            <td>@keyValuePair.Item1.OriginatorName</td>
+            <td>@keyValuePair.Item1.PostalAddress.Country.Name</td>
+            <td>@keyValuePair.Item1.OriginatorDateOfBirth.ToString("dd/MM/yyyy")</td>
+            <td>@keyValuePair.Item1.Transfer.VirtualAssetType</td>
+            <td>@keyValuePair.Item1.Transfer.TransferAmount</td>
+            <td>@keyValuePair.Item2</td>
+            <td>@keyValuePair.Item1.BeneficiaryName</td>
+        </tr>
+    }
+    </tbody>
+</table>

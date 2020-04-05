@@ -1,0 +1,34 @@
+﻿@model List<KeyValuePair<string, SessionDemo.Services.PendingTransferRequest>>
+@{
+    ViewData["Title"] = "Pending Transactions";
+}
+<h3>@ViewData["Title"]</h3>
+
+<p>Transactions that need manual approval.</p>
+
+<table id="myTable" class="table" cellspacing="0">
+    <thead>
+    <tr>
+        <td>Originator Name</td>
+        <td>Country</td>
+        <td>Date Of Birth</td>
+        <td>Asset Type</td>
+        <td>Amount</td>
+        <td></td>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var keyValuePair in Model)
+    {
+        <tr>
+            <td>@keyValuePair.Value.OriginatorName</td>
+            <td>@keyValuePair.Value.PostalAddress.Country.Name</td>
+            <td>@keyValuePair.Value.OriginatorDateOfBirth.ToString("dd/MM/yyyy")</td>
+            <td>@keyValuePair.Value.Transfer.VirtualAssetType</td>
+            <td>@keyValuePair.Value.Transfer.TransferAmount</td>
+            <td> <a asp-action="Approve" asp-route-id="@keyValuePair.Key">Approve</a> |
+                <a asp-action="Cancel" asp-route-id="@keyValuePair.Key">Cancel</a></td>
+        </tr>
+    }
+    </tbody>
+</table>
