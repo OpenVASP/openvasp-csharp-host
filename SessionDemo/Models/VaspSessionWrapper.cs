@@ -90,6 +90,7 @@ namespace SessionDemo.Models
 
                     PendingTransferRequest = new PendingTransferRequest
                     {
+                        BeneficiaryName = beneficiaryName,
                         OriginatorName = request.Originator.Name,
                         OriginatorDateOfBirth = request.Originator.PlaceOfBirth.DateOfBirth,
                         Transfer = new VirtualAssetTransfer
