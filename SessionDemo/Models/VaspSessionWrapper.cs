@@ -16,6 +16,7 @@ namespace SessionDemo.Models
     public class VaspSessionWrapper
     {
         public string Id { get; }
+
         public VaspSessionState State
         {
             get
@@ -29,7 +30,7 @@ namespace SessionDemo.Models
                 }
             }
         }
-        
+
         public List<(VaspSessionState, DateTime)> StatesHistory
         {
             get
@@ -48,15 +49,13 @@ namespace SessionDemo.Models
         private readonly VaspClient _originatorClient;
         private readonly VaspClient _beneficiaryClient;
         private readonly IVaspMessageHandler _vaspMessageHandler;
-        
-        private Task _sessionTask;
+
         private bool? _shouldAllowTransferRequest;
 
         private readonly SemaphoreSlim _transferRequestSemaphore = new SemaphoreSlim(0, 1);
 
         private TransferReply _transferRequestReply;
-        
-        public PendingTransferRequest  PendingTransferRequest { get; private set; }
+        public PendingTransferRequest PendingTransferRequest { get; private set; }
 
         public VaspSessionWrapper(
             string beneficiaryName,
@@ -65,23 +64,30 @@ namespace SessionDemo.Models
         {
             Id = Guid.NewGuid().ToString();
             _statesHistory = new List<(VaspSessionState, DateTime)>();
-            
+
             SetState(VaspSessionState.Created);
-            
+
             _originatorClient = originatorClient;
             _beneficiaryClient = beneficiaryClient;
-            
+
             _vaspMessageHandler = new VaspMessageHandlerCallbacks(
                 (vaspInfo) =>
                 {
-                    SetState(VaspSessionState.SessionConfirmed);
-                    
-                    return Task.FromResult(true);
+                    if (State == VaspSessionState.SessionRequested)
+                    {
+                        SetState(VaspSessionState.SessionConfirmed);
+
+                        return Task.FromResult(true);
+                    }
+                    else
+                    {
+                        return Task.FromResult(false);
+                    }
                 },
                 async (request, currentSession) =>
                 {
                     SetState(VaspSessionState.WaitingForTransferRequestApproval);
-                    
+
                     PendingTransferRequest = new PendingTransferRequest
                     {
                         OriginatorName = request.Originator.Name,
@@ -94,37 +100,39 @@ namespace SessionDemo.Models
                         },
                         PostalAddress = request.Originator.PostalAddress
                     };
-                    
+
                     await _transferRequestSemaphore.WaitAsync();
 
                     if (_shouldAllowTransferRequest.Value)
                     {
-                        var message = new TransferReplyMessage(currentSession.SessionId, TransferReplyMessage.TransferReplyMessageCode.TransferAccepted,
-                            request.Originator, 
-                            new Beneficiary(beneficiaryName, request.Beneficiary.VAAN), 
+                        var message = new TransferReplyMessage(currentSession.SessionId,
+                            TransferReplyMessage.TransferReplyMessageCode.TransferAccepted,
+                            request.Originator,
+                            new Beneficiary(beneficiaryName, request.Beneficiary.VAAN),
                             new TransferReply(
-                                request.Transfer.VirtualAssetType, 
-                                request.Transfer.TransferType, 
-                                request.Transfer.Amount, 
+                                request.Transfer.VirtualAssetType,
+                                request.Transfer.TransferType,
+                                request.Transfer.Amount,
                                 "0x0"),
                             request.VASP);
-                        
+
                         SetState(VaspSessionState.TransferRequestConfirmed);
 
                         return message;
                     }
                     else
                     {
-                        var message = new TransferReplyMessage(currentSession.SessionId, TransferReplyMessage.TransferReplyMessageCode.TransferDeclinedRequestNotValid,
-                            request.Originator, 
-                            new Beneficiary(beneficiaryName, request.Beneficiary.VAAN), 
+                        var message = new TransferReplyMessage(currentSession.SessionId,
+                            TransferReplyMessage.TransferReplyMessageCode.TransferDeclinedRequestNotValid,
+                            request.Originator,
+                            new Beneficiary(beneficiaryName, request.Beneficiary.VAAN),
                             new TransferReply(
-                                request.Transfer.VirtualAssetType, 
-                                request.Transfer.TransferType, 
-                                request.Transfer.Amount, 
+                                request.Transfer.VirtualAssetType,
+                                request.Transfer.TransferType,
+                                request.Transfer.Amount,
                                 "ignore"),
                             request.VASP);
-                        
+
                         SetState(VaspSessionState.TransferRequestDeclined);
 
                         return message;
@@ -132,14 +140,14 @@ namespace SessionDemo.Models
                 },
                 (dispatch, currentSession) =>
                 {
-                    var message = new TransferConfirmationMessage(currentSession.SessionId, 
+                    var message = new TransferConfirmationMessage(currentSession.SessionId,
                         TransferConfirmationMessage.TransferConfirmationMessageCode.TransferConfirmed,
                         dispatch.Originator,
                         dispatch.Beneficiary,
                         dispatch.Transfer,
                         dispatch.Transaction,
                         dispatch.VASP);
-                    
+
                     SetState(VaspSessionState.TransferConfirmed);
 
                     return Task.FromResult(message);
@@ -149,13 +157,13 @@ namespace SessionDemo.Models
         }
 
         public void StartSession(Originator originator, VirtualAssetssAccountNumber beneficiaryVaan,
-        VirtualAssetType assetType, decimal amount)
+            VirtualAssetType assetType, decimal amount)
         {
             if (State != VaspSessionState.Created)
             {
                 throw new InvalidOperationException($"The session {Id} has already started.");
             }
-            
+
             _originatorClient.CreateSessionAsync(originator, beneficiaryVaan)
                 .ContinueWith(x =>
                 {
@@ -163,7 +171,7 @@ namespace SessionDemo.Models
 
                     Transfer(assetType, amount);
                 });
-            
+
             SetState(VaspSessionState.SessionRequested);
         }
 
@@ -173,23 +181,23 @@ namespace SessionDemo.Models
             {
                 throw new InvalidOperationException($"The session {Id} is not in a confirmed state.");
             }
-            
+
             _originatorSession.TransferRequestAsync(new TransferInstruction()
-            {
-                VirtualAssetTransfer = new VirtualAssetTransfer()
                 {
-                    TransferType = TransferType.BlockchainTransfer,
-                    VirtualAssetType = assetType,
-                    TransferAmount = amount.ToString(CultureInfo.InvariantCulture)
-                }
-            })
+                    VirtualAssetTransfer = new VirtualAssetTransfer()
+                    {
+                        TransferType = TransferType.BlockchainTransfer,
+                        VirtualAssetType = assetType,
+                        TransferAmount = amount.ToString(CultureInfo.InvariantCulture)
+                    }
+                })
                 .ContinueWith(x =>
                 {
                     _transferRequestReply = x.Result.Transfer;
 
                     DispatchTransfer(new Transaction($"0x{Guid.NewGuid().ToString("N")}", DateTime.UtcNow, "0x0...a"));
                 });
-            
+
             SetState(VaspSessionState.TransferRequestSent);
         }
 
@@ -211,20 +219,20 @@ namespace SessionDemo.Models
             {
                 throw new InvalidOperationException($"The session {Id} didn't get transfer request confirmation.");
             }
-            
+
             _originatorSession.TransferDispatchAsync(_transferRequestReply, transaction)
                 .ContinueWith(async (x) =>
-                    {
-                        await _originatorSession.TerminateAsync(
-                            TerminationMessage.TerminationMessageCode.SessionClosedTransferOccured);
-                        
-                        _originatorSession.Wait();
-                        _originatorClient.Dispose();
-                        _beneficiaryClient.Dispose();
-                        
-                        SetState(VaspSessionState.Terminated);
-                    });
-            
+                {
+                    await _originatorSession.TerminateAsync(
+                        TerminationMessage.TerminationMessageCode.SessionClosedTransferOccured);
+
+                    _originatorSession.Wait();
+                    _originatorClient.Dispose();
+                    _beneficiaryClient.Dispose();
+
+                    SetState(VaspSessionState.Terminated);
+                });
+
             SetState(VaspSessionState.TransferDispatched);
         }
 
