@@ -1,0 +1,15 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "OpenVASP.ProtocolMessages.Messages";
+
+package protobuf_openvasp;
+
+message ProtoMessage {
+  int32 message_type = 1;
+
+  string message_id = 2;
+
+  string session_id = 3;
+
+  string message_code = 4;
+}

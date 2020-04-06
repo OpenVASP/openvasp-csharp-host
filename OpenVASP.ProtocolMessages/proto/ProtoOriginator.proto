@@ -1,0 +1,25 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "OpenVASP.ProtocolMessages.Messages";
+
+package protobuf_openvasp;
+import "ProtoPostalAddress.proto";
+import "ProtoPlaceOfBirth.proto";
+import "ProtoNaturalPersonId.proto";
+import "ProtoJuridicalPersonId.proto";
+
+message ProtoOriginator {
+  string name = 1;
+
+  string vaan = 2;
+
+  ProtoPostalAddress postal_address = 4;
+
+  ProtoPlaceOfBirth placeOfBirth = 5;
+
+  repeated ProtoNaturalPersonId natural_person_id = 6;
+
+  repeated ProtoJuridicalPersonId juridical_person_id  = 7;
+
+  string bic  = 8;
+}

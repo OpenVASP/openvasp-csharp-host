@@ -1,0 +1,13 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "OpenVASP.ProtocolMessages.Messages";
+
+package protobuf_openvasp;
+
+message ProtoPlaceOfBirth {
+  string date = 1;
+
+  string city_of_birth = 2;
+
+  string country_of_birth = 3;
+}

@@ -1,0 +1,13 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "OpenVASP.ProtocolMessages.Messages";
+
+package protobuf_openvasp;
+
+message ProtoTransaction {
+  string transaction_id = 1;
+
+  string transaction_datetime = 2;
+
+  string sending_address = 3;
+}

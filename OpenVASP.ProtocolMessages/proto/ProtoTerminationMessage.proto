@@ -1,0 +1,16 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "OpenVASP.ProtocolMessages.Messages";
+
+package protobuf_openvasp;
+import "ProtoVaspInfo.proto";
+import "ProtoMessage.proto";
+
+message ProtoTerminationMessage {
+
+  ProtoMessage message = 1;
+
+  string comment = 4;
+
+  ProtoVaspInfo VaspInfo = 5;
+}

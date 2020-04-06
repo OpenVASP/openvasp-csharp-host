@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenVASP.CSharpClient\OpenVASP.CSharpClient.csproj" />
+    <ProjectReference Include="..\OpenVASP.Tests\OpenVASP.Tests.csproj" />
+  </ItemGroup>
+
+
+
+</Project>
