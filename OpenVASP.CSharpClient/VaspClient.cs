@@ -197,7 +197,8 @@ namespace OpenVASP.CSharpClient
         /// <returns>OriginatorSession through which transfer request and transfer dispatch should be requested.</returns>
         public async Task<OriginatorSession> CreateSessionAsync(
             Originator originator,
-            VirtualAssetssAccountNumber beneficiaryVaan)
+            VirtualAssetsAccountNumber beneficiaryVaan,
+            IOriginatorVaspCallbacks _originatorVaspCallbacks)
         {
             string counterPartyVaspContractAddress = await _ensProvider.GetContractAddressByVaspCodeAsync(beneficiaryVaan.VaspCode);
             var contractInfo = await _ethereumRpc.GetVaspContractInfoAync(counterPartyVaspContractAddress);
@@ -216,7 +217,8 @@ namespace OpenVASP.CSharpClient
                 this._signatureKey,
                 _whisperRpc,
                 _transportClient,
-                _signService);
+                _signService,
+                _originatorVaspCallbacks);
 
             if (_originatorSessionsDict.TryAdd(session.SessionId, session))
             {

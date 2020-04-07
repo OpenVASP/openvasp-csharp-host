@@ -36,7 +36,7 @@
 
         public static Originator CreateOriginatorForNaturalPerson(
             string originatorName, 
-            VirtualAssetssAccountNumber vaan,
+            VirtualAssetsAccountNumber vaan,
             PostalAddress postalAddress,
             PlaceOfBirth placeOfBirth,
             NaturalPersonId[] naturalPersonIds)

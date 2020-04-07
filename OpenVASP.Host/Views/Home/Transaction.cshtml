@@ -1,0 +1,89 @@
+@model OpenVASP.Host.Models.Response.TransactionDetailsModel
+
+@{
+    ViewBag.Title = "OpenVASP Host";
+    Layout = "_Layout";
+}
+
+<table class="table">
+    <thead>
+    <tr>
+        <th scope="col">Field Name</th>
+        <th scope="col">Value</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>Transaction Id</td>
+        <td>@Model.Id</td>
+    </tr>
+    <tr>
+        <td>Session Id</td>
+        <td>@Model.SessionId</td>
+    </tr>
+    <tr>
+        <td>Creation Date And Time</td>
+        <td>@Model.CreationDateTime.ToString("dd/MM/yyyy")</td>
+    </tr>
+    <tr>
+        <td>Status</td>
+        <td>@Model.StatusStringified</td>
+    </tr>
+    <tr>
+        <td>Originator Name</td>
+        <td>@Model.OriginatorFullName</td>
+    </tr>
+    <tr>
+        <td>Originator VAAN</td>
+        <td>@Model.OriginatorVaan</td>
+    </tr>
+    <tr>
+        <td>Beneficiary Name</td>
+        <td>@Model.BeneficiaryFullName</td>
+    </tr>
+    <tr>
+        <td>Beneficiary VAAN</td>
+        <td>@Model.BeneficiaryVaan</td>
+    </tr>
+    <tr>
+        <td>Asset</td>
+        <td>@Model.Asset</td>
+    </tr>
+    <tr>
+        <td>Amount</td>
+        <td>@Model.Amount</td>
+    </tr>
+    <tr>
+        <td>Originator Place Of Birth Country</td>
+        <td>@Model.OriginatorPlaceOfBirthCountry</td>
+    </tr>
+    <tr>
+        <td>Originator Place Of Birth Town</td>
+        <td>@Model.OriginatorPlaceOfBirthTown</td>
+    </tr>
+    <tr>
+        <td>Originator Place Of Birth Date</td>
+        <td>@Model.OriginatorPlaceOfBirthDate.ToString("dd/MM/yyyy")</td>
+    </tr>
+    <tr>
+        <td>Originator Postal Address Country</td>
+        <td>@Model.OriginatorPostalAddressCountry</td>
+    </tr>
+    <tr>
+        <td>Originator Postal Address Town</td>
+        <td>@Model.OriginatorPostalAddressTown</td>
+    </tr>
+    <tr>
+        <td>Originator Postal Address Street</td>
+        <td>@Model.OriginatorPostalAddressStreet</td>
+    </tr>
+    <tr>
+        <td>Originator Postal Address Line</td>
+        <td>@Model.OriginatorPostalAddressAddressLine</td>
+    </tr>
+    <tr>
+        <td>Originator Postal Addres Zip Code</td>
+        <td>@Model.OriginatorPostalAddressPostCode</td>
+    </tr>
+    </tbody>
+</table>

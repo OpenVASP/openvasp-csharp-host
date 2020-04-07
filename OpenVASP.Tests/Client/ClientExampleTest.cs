@@ -107,8 +107,11 @@ namespace OpenVASP.Tests.Client
                 _signService,
                 NodeClient.TransportClient);
 
-            var originatorVaan =  VirtualAssetssAccountNumber.Create(   vaspInfoPerson.GetVaspCode(), "524ee3fb082809");
-            var beneficiaryVaan = VirtualAssetssAccountNumber.Create(vaspInfoJuridical.GetVaspCode(), "524ee3fb082809");
+            var a = vaspInfoPerson.GetVaspCode();
+            var b = vaspInfoJuridical.GetVaspCode();
+            
+            var originatorVaan =  VirtualAssetsAccountNumber.Create(   vaspInfoPerson.GetVaspCode(), "524ee3fb082809");
+            var beneficiaryVaan = VirtualAssetsAccountNumber.Create(vaspInfoJuridical.GetVaspCode(), "524ee3fb082809");
 
             IVaspMessageHandler messageHandler = new VaspMessageHandlerCallbacks(
                 (vaspInfo) =>
@@ -166,20 +169,33 @@ namespace OpenVASP.Tests.Client
                     {
                         new NaturalPersonId("Id", NaturalIdentificationType.NationalIdentityNumber, Country.List["DE"]), 
                     });
-            var session = await originator.CreateSessionAsync(originatorDoc, beneficiaryVaan);
-
-            var transferReply = await session.TransferRequestAsync(new TransferInstruction()
-            {
-                VirtualAssetTransfer = new VirtualAssetTransfer()
-                {
-                    TransferType = TransferType.BlockchainTransfer,
-                    VirtualAssetType = VirtualAssetType.ETH,
-                    TransferAmount = "1000000000000000000"
-                }
-            });
-
-            var transferConformation = 
-                await session.TransferDispatchAsync(transferReply.Transfer, new Transaction("0xtxhash", DateTime.UtcNow, "0x0...a"));
+            
+            var session = await originator.CreateSessionAsync(
+                originatorDoc, beneficiaryVaan, new OriginatorVaspCallbacks(
+                    (message, originatorSession) =>
+                    {
+                        return originatorSession.TransferRequestAsync(new TransferInstruction()
+                        {
+                            VirtualAssetTransfer = new VirtualAssetTransfer()
+                            {
+                                TransferType = TransferType.BlockchainTransfer,
+                                VirtualAssetType = VirtualAssetType.ETH,
+                                TransferAmount = "1000000000000000000"
+                            }
+                        });
+                    },
+                    (message, originatorSession) =>
+                    {
+                        return originatorSession.TransferDispatchAsync(message.Transfer,
+                            new Transaction("0xtxhash", DateTime.UtcNow, "0x0...a"));
+                    },
+                    async (message, originatorSession) =>
+                    {
+                        await originatorSession.TerminateAsync(TerminationMessage.TerminationMessageCode.SessionClosedTransferOccured);
+                        originatorSession.Wait();
+                        originator.Dispose();
+                        beneficiary.Dispose();
+                    }));
 
             Assert.Equal(1, originator.GetActiveSessions().Count);
             Assert.True(originator.GetActiveSessions().First() is OriginatorSession);
@@ -187,13 +203,7 @@ namespace OpenVASP.Tests.Client
             Assert.Equal(1, beneficiary.GetActiveSessions().Count);
             Assert.True(beneficiary.GetActiveSessions().First() is BeneficiarySession);
 
-            await session.TerminateAsync(TerminationMessage.TerminationMessageCode.SessionClosedTransferOccured);
-            session.Wait();
-            originator.Dispose();
-            beneficiary.Dispose();
-
             Assert.Equal(2, sessionTerminationCounter);
-
 
             _testOutputHelper.WriteLine("End of test");
         }
