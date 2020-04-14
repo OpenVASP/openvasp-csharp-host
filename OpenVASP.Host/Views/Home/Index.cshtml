@@ -36,13 +36,13 @@ $( document ).ready(function() {
             url = url + '&destinationAddress=' + destinationAddress
         }
         
-        return encodeURIComponent(url);
+        return url;
     };
     
     makeTransactionDispatchUrl = function() {
-        return encodeURIComponent('api/outgoingTransactions/' + transactionId + '/dispatch?sendingAddress='
+        return 'api/outgoingTransactions/' + transactionId + '/dispatch?sendingAddress='
             + $("#inputTransactionSendingAddress").val() + "&transactionHash="
-            + $("#inputTransactionHash").val());
+            + $("#inputTransactionHash").val();
     };
     
     transferConfirm = function(button, id) {
