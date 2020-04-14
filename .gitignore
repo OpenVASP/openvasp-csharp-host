@@ -5,7 +5,12 @@
 *.userosscache
 *.sln.docstates
 
+OpenVASP.Host/OpenVASP.Host.xml
+
 .idea
+
+**/appsettings.[Pp]roduction.json
+**/appsettings.[Dd]evelopment.json
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

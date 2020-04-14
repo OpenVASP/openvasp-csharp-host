@@ -17,7 +17,7 @@ namespace OpenVASP.Tests
         public void VaanIsCorrectTest()
         {
             string expectedVaan = "bb428798524ee3fb082809d3";
-            VirtualAssetssAccountNumber vaan = VirtualAssetssAccountNumber.Create("bb428798", "524ee3fb082809");
+            VirtualAssetsAccountNumber vaan = VirtualAssetsAccountNumber.Create("bb428798", "524ee3fb082809");
 
             Assert.Equal(expectedVaan, vaan.Vaan);
         }

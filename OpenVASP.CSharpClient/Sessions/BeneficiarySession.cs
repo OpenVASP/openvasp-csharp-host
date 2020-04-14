@@ -42,29 +42,13 @@ namespace OpenVASP.CSharpClient.Sessions
             _messageHandlerResolverBuilder.AddHandler(typeof(TransferRequestMessage), new TransferRequestMessageHandler(
                 async (message, cancellationToken) =>
                 {
-                    var reply = await _vaspMessageHandler.TransferRequestHandlerAsync(message, this);
-
-                    await _transportClient.SendAsync(new MessageEnvelope()
-                    {
-                        Topic = this.CounterPartyTopic,
-                        SigningKey = _privateSigningKey,
-                        EncryptionType = EncryptionType.Symmetric,
-                        EncryptionKey = _sharedSymKeyId
-                    }, reply);
+                    await _vaspMessageHandler.TransferRequestHandlerAsync(message, this);
                 }));
 
             _messageHandlerResolverBuilder.AddHandler(typeof(TransferDispatchMessage), new TransferDispatchMessageHandler(
                 async (message, cancellationToken) =>
                 {
-                    var reply = await _vaspMessageHandler.TransferDispatchHandlerAsync(message, this);
-
-                    await _transportClient.SendAsync(new MessageEnvelope()
-                    {
-                        Topic = this.CounterPartyTopic,
-                        SigningKey = _privateSigningKey,
-                        EncryptionType = EncryptionType.Symmetric,
-                        EncryptionKey = _sharedSymKeyId
-                    }, reply);
+                    await _vaspMessageHandler.TransferDispatchHandlerAsync(message, this);
                 }));
 
             _messageHandlerResolverBuilder.AddHandler(typeof(TerminationMessage),
@@ -73,6 +57,28 @@ namespace OpenVASP.CSharpClient.Sessions
                     _hasReceivedTerminationMessage = true;
                     await TerminateAsync(message.GetMessageCode());
                 }));
+        }
+
+        public async Task SendTransferReplyMessageAsync(TransferReplyMessage message)
+        {
+            await _transportClient.SendAsync(new MessageEnvelope()
+            {
+                Topic = this.CounterPartyTopic,
+                SigningKey = _privateSigningKey,
+                EncryptionType = EncryptionType.Symmetric,
+                EncryptionKey = _sharedSymKeyId
+            }, message);
+        }
+
+        public async Task SendTransferConfirmationMessageAsync(TransferConfirmationMessage message)
+        {
+            await _transportClient.SendAsync(new MessageEnvelope()
+            {
+                Topic = this.CounterPartyTopic,
+                SigningKey = _privateSigningKey,
+                EncryptionType = EncryptionType.Symmetric,
+                EncryptionKey = _sharedSymKeyId
+            }, message);
         }
 
         public override async Task StartAsync()

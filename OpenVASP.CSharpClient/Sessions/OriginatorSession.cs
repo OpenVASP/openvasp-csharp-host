@@ -11,29 +11,26 @@ namespace OpenVASP.CSharpClient.Sessions
 {
     public class OriginatorSession : VaspSession
     {
-        private readonly VirtualAssetssAccountNumber _beneficiaryVaan;
+        private readonly VirtualAssetsAccountNumber _beneficiaryVaan;
         private readonly string _beneficiaryPubHandshakeKey;
         private readonly string _pubEncryptionKey;
+        private readonly IOriginatorVaspCallbacks _originatorVaspCallbacks;
         private readonly Originator _originator;
 
-        private readonly TaskCompletionSource<SessionReplyMessage> _sessionReplyCompletionSource = new TaskCompletionSource<SessionReplyMessage>();
-        private readonly TaskCompletionSource<TransferReplyMessage> _transferReplyCompletionSource = new TaskCompletionSource<TransferReplyMessage>();
-        private readonly TaskCompletionSource<TransferConfirmationMessage> _transferConfirmationCompletionSource = new TaskCompletionSource<TransferConfirmationMessage>();
-
-
         public OriginatorSession(
-            Originator originator,
-            VaspContractInfo originatorVaspContractInfo,
-            VaspInformation originatorVasp,
-            VirtualAssetssAccountNumber beneficiaryVaan,
-            string beneficiaryPubSigningKey,
-            string beneficiaryPubHandshakeKey,
-            string sharedEncryptionKey,
-            string pubEncryptionKey,
-            string privateSigningKey,
-            IWhisperRpc whisperRpc,
-            ITransportClient transportClient,
-            ISignService signService)
+                Originator originator,
+                VaspContractInfo originatorVaspContractInfo,
+                VaspInformation originatorVasp,
+                VirtualAssetsAccountNumber beneficiaryVaan,
+                string beneficiaryPubSigningKey,
+                string beneficiaryPubHandshakeKey,
+                string sharedEncryptionKey,
+                string pubEncryptionKey,
+                string privateSigningKey,
+                IWhisperRpc whisperRpc,
+                ITransportClient transportClient,
+                ISignService signService,
+                IOriginatorVaspCallbacks originatorVaspCallbacks)
             //IEnsProvider ensProvider)
             : base(
                 originatorVaspContractInfo,
@@ -49,41 +46,28 @@ namespace OpenVASP.CSharpClient.Sessions
             this.SessionId = Guid.NewGuid().ToString();
             this._beneficiaryPubHandshakeKey = beneficiaryPubHandshakeKey;
             this._pubEncryptionKey = pubEncryptionKey;
+            this._originatorVaspCallbacks = originatorVaspCallbacks;
             //this._ensProvider = ensProvider;
             this._originator = originator;
 
             _messageHandlerResolverBuilder.AddHandler(typeof(SessionReplyMessage),
                 new SessionReplyMessageHandler((sessionReplyMessage, token) =>
                 {
-                    if (_sessionReplyCompletionSource.Task.Status == TaskStatus.WaitingForActivation)
-                    {
-                        this.CounterPartyTopic = sessionReplyMessage.HandShake.TopicB;
-                        _sessionReplyCompletionSource.SetResult(sessionReplyMessage);
-                    }
-
-                    return Task.CompletedTask;
+                    this.CounterPartyTopic = sessionReplyMessage.HandShake.TopicB;
+                    return _originatorVaspCallbacks.SessionReplyMessageHandlerAsync(sessionReplyMessage, this);
                 }));
 
             _messageHandlerResolverBuilder.AddHandler(typeof(TransferReplyMessage),
                 new TransferReplyMessageHandler((transferReplyMessage, token) =>
                 {
-                    if (_transferReplyCompletionSource.Task.Status == TaskStatus.WaitingForActivation)
-                    {
-                        _transferReplyCompletionSource.TrySetResult(transferReplyMessage);
-                    }
-
-                    return Task.CompletedTask;
+                    return _originatorVaspCallbacks.TransferReplyMessageHandlerAsync(transferReplyMessage, this);
                 }));
 
             _messageHandlerResolverBuilder.AddHandler(typeof(TransferConfirmationMessage),
                 new TransferConfirmationMessageHandler((transferDispatchMessage, token) =>
                 {
-                    if (_transferConfirmationCompletionSource.Task.Status == TaskStatus.WaitingForActivation)
-                    {
-                        _transferConfirmationCompletionSource.TrySetResult(transferDispatchMessage);
-                    }
-
-                    return Task.CompletedTask;
+                    return _originatorVaspCallbacks.TransferConfirmationMessageHandlerAsync(transferDispatchMessage,
+                        this);
                 }));
 
             _messageHandlerResolverBuilder.AddHandler(typeof(TerminationMessage),
@@ -114,61 +98,88 @@ namespace OpenVASP.CSharpClient.Sessions
                 EncryptionType = EncryptionType.Assymetric,
                 EncryptionKey = _beneficiaryPubHandshakeKey
             }, sessionRequestMessage);
-
-            await _sessionReplyCompletionSource.Task;
         }
 
-        public async Task<TransferReplyMessage> TransferRequestAsync(TransferInstruction instruction)
+        public async Task TransferRequestAsync(TransferInstruction instruction)
         {
-            if (_transferReplyCompletionSource.Task.Status == TaskStatus.WaitingForActivation)
+            var transferRequest = new TransferRequestMessage(
+                this.SessionId,
+                _originator,
+                new Beneficiary(instruction.BeneficiaryName ?? string.Empty, _beneficiaryVaan.Vaan),
+                new TransferRequest(
+                    instruction.VirtualAssetTransfer.VirtualAssetType,
+                    instruction.VirtualAssetTransfer.TransferType,
+                    instruction.VirtualAssetTransfer.TransferAmount),
+                _vaspInfo
+            );
+
+            await _transportClient.SendAsync(new MessageEnvelope()
             {
-                var transferRequest = new TransferRequestMessage(
-                    this.SessionId,
-                    _originator,
-                    new Beneficiary("", _beneficiaryVaan.Vaan),
-                    new TransferRequest(
-                        instruction.VirtualAssetTransfer.VirtualAssetType,
-                        instruction.VirtualAssetTransfer.TransferType,
-                        instruction.VirtualAssetTransfer.TransferAmount),
-                    _vaspInfo
-                );
-
-                await _transportClient.SendAsync(new MessageEnvelope()
-                {
-                    Topic = this.CounterPartyTopic,
-                    SigningKey = _privateSigningKey,
-                    EncryptionType = EncryptionType.Symmetric,
-                    EncryptionKey = _sharedSymKeyId
-                }, transferRequest);
-
-            }
-
-            return await _transferReplyCompletionSource.Task;
+                Topic = this.CounterPartyTopic,
+                SigningKey = _privateSigningKey,
+                EncryptionType = EncryptionType.Symmetric,
+                EncryptionKey = _sharedSymKeyId
+            }, transferRequest);
         }
 
-        public async Task<TransferConfirmationMessage> TransferDispatchAsync(TransferReply transferReply, Transaction transaction)
+        public async Task TransferDispatchAsync(TransferReply transferReply, Transaction transaction)
         {
-            if (_transferConfirmationCompletionSource.Task.Status == TaskStatus.WaitingForActivation)
+            var transferRequest = new TransferDispatchMessage(
+                this.SessionId,
+                this._originator,
+                new Beneficiary("", _beneficiaryVaan.Vaan),
+                transferReply,
+                transaction,
+                _vaspInfo
+            );
+
+            await _transportClient.SendAsync(new MessageEnvelope()
             {
-                var transferRequest = new TransferDispatchMessage(
-                    this.SessionId,
-                    this._originator,
-                    new Beneficiary("", _beneficiaryVaan.Vaan),
-                    transferReply,
-                    transaction,
-                    _vaspInfo
-                );
+                Topic = this.CounterPartyTopic,
+                SigningKey = _privateSigningKey,
+                EncryptionType = EncryptionType.Symmetric,
+                EncryptionKey = _sharedSymKeyId
+            }, transferRequest);
+        }
+    }
 
-                await _transportClient.SendAsync(new MessageEnvelope()
-                {
-                    Topic = this.CounterPartyTopic,
-                    SigningKey = _privateSigningKey,
-                    EncryptionType = EncryptionType.Symmetric,
-                    EncryptionKey = _sharedSymKeyId
-                }, transferRequest);
-            }
+    public interface IOriginatorVaspCallbacks
+    {
+        Task SessionReplyMessageHandlerAsync(SessionReplyMessage message, OriginatorSession session);
+        Task TransferReplyMessageHandlerAsync(TransferReplyMessage message, OriginatorSession session);
+        Task TransferConfirmationMessageHandlerAsync(TransferConfirmationMessage message, OriginatorSession session);
+    }
 
-            return await _transferConfirmationCompletionSource.Task;
+    public class OriginatorVaspCallbacks : IOriginatorVaspCallbacks
+    {
+        private readonly Func<SessionReplyMessage, OriginatorSession, Task> _sessionReply;
+        private readonly Func<TransferReplyMessage, OriginatorSession, Task> _transferReply;
+        private readonly Func<TransferConfirmationMessage, OriginatorSession, Task> _transferConfirm;
+
+        public OriginatorVaspCallbacks(
+            Func<SessionReplyMessage, OriginatorSession, Task> sessionReply,
+            Func<TransferReplyMessage, OriginatorSession, Task> transferReply,
+            Func<TransferConfirmationMessage, OriginatorSession, Task> transferConfirm)
+        {
+            _sessionReply = sessionReply ?? throw new ArgumentNullException(nameof(sessionReply));
+            _transferReply = transferReply ?? throw new ArgumentNullException(nameof(transferReply));
+            _transferConfirm = transferConfirm ?? throw new ArgumentNullException(nameof(transferConfirm));
+        }
+
+        public Task SessionReplyMessageHandlerAsync(SessionReplyMessage message, OriginatorSession session)
+        {
+            return _sessionReply.Invoke(message, session);
+        }
+
+        public Task TransferReplyMessageHandlerAsync(TransferReplyMessage message, OriginatorSession session)
+        {
+            return _transferReply.Invoke(message, session);
+        }
+
+        public Task TransferConfirmationMessageHandlerAsync(TransferConfirmationMessage message,
+            OriginatorSession session)
+        {
+            return _transferConfirm.Invoke(message, session);
         }
     }
 }
