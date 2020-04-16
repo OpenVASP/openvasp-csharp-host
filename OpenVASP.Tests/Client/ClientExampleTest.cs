@@ -9,9 +9,9 @@ using OpenVASP.CSharpClient.Cryptography;
 using OpenVASP.CSharpClient.Delegates;
 using OpenVASP.CSharpClient.Interfaces;
 using OpenVASP.CSharpClient.Sessions;
+using OpenVASP.Messaging;
 using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;
-using OpenVASP.ProtoMappers;
 using Xunit;
 using Xunit.Abstractions;
 using Transaction = OpenVASP.Messaging.Messages.Entities.Transaction;
@@ -120,7 +120,7 @@ namespace OpenVASP.Tests.Client
                 },
                 (request, currentSession) =>
                 {
-                    var message = new TransferReplyMessage(currentSession.SessionId, TransferReplyMessage.TransferReplyMessageCode.TransferAccepted,
+                    var message = TransferReplyMessage.Create(currentSession.SessionId, TransferReplyMessage.TransferReplyMessageCode.TransferAccepted,
                         request.Originator, 
                         new Beneficiary("Mr. Test",request.Beneficiary.VAAN), 
                         new TransferReply(
@@ -134,7 +134,7 @@ namespace OpenVASP.Tests.Client
                 },
                 (dispatch, currentSession) =>
                 {
-                    var message = new TransferConfirmationMessage(currentSession.SessionId, 
+                    var message = TransferConfirmationMessage.Create(currentSession.SessionId, 
                         TransferConfirmationMessage.TransferConfirmationMessageCode.TransferConfirmed,
                         dispatch.Originator,
                         dispatch.Beneficiary,

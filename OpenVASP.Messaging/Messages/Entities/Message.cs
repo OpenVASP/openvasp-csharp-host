@@ -1,4 +1,6 @@
-﻿namespace OpenVASP.Messaging.Messages.Entities
+﻿using Newtonsoft.Json;
+
+namespace OpenVASP.Messaging.Messages.Entities
 {
     public class Message
     {
@@ -9,10 +11,13 @@
             MessageCode = messageCode;
         }
 
+        [JsonProperty("msgid")]
         public string MessageId { get; private set; }
 
+        [JsonProperty("session")]
         public string SessionId { get; private set; }
 
+        [JsonProperty("code")]
         public string MessageCode { get; private set; }
     }
 }

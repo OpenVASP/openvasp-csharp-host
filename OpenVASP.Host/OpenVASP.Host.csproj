@@ -29,7 +29,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OpenVASP.CSharpClient\OpenVASP.CSharpClient.csproj" />
-    <ProjectReference Include="..\OpenVASP.Tests\OpenVASP.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>

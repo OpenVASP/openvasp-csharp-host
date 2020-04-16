@@ -83,7 +83,7 @@ namespace OpenVASP.CSharpClient.Sessions
 
         public override async Task StartAsync()
         {
-            var reply = new SessionReplyMessage(this.SessionId, new HandShakeResponse(this.SessionTopic), this._vaspInfo);
+            var reply = SessionReplyMessage.Create(this.SessionId, new HandShakeResponse(this.SessionTopic), this._vaspInfo);
             this.CounterParty.VaspInfo = reply.VASP;
             _sharedSymKeyId = await _whisperRpc.RegisterSymKeyAsync(_sharedKey);
 

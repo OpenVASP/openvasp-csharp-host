@@ -174,7 +174,7 @@ namespace OpenVASP.Tests.Client.Sessions
 
         protected virtual async Task TerminateStrategyAsync(TerminationMessage.TerminationMessageCode terminationMessageCode)
         {
-            var terminationMessage = new TerminationMessage(
+            var terminationMessage = TerminationMessage.Create(
                 this.SessionId,
                 terminationMessageCode,
                 _vaspInfo);

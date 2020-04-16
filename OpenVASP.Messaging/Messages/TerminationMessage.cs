@@ -1,29 +1,38 @@
 ﻿using System;
+using Newtonsoft.Json;
 using OpenVASP.Messaging.Messages.Entities;
 
 namespace OpenVASP.Messaging.Messages
 {
     public class TerminationMessage : MessageBase
     {
-        public TerminationMessage(Message message, VaspInformation vasp)
+        public static TerminationMessage Create(Message message, VaspInformation vasp)
         {
-            MessageType = MessageType.Termination;
-            Message = message;
-            VASP = vasp;
+            return new TerminationMessage
+            {
+                MessageType = MessageType.Termination,
+                Message = message,
+                VASP = vasp,
+            };
         }
 
-        public TerminationMessage(string sessionId, TerminationMessageCode messageCode, VaspInformation vasp)
+        public static TerminationMessage Create(string sessionId, TerminationMessageCode messageCode, VaspInformation vasp)
         {
-            MessageType = MessageType.Termination;
-            Message = new Message(
+            return new TerminationMessage
+            {
+                MessageType = MessageType.Termination,
+                Message = new Message(
                 Guid.NewGuid().ToString(),
                 sessionId,
-                GetMessageCode(messageCode));
-            VASP = vasp;
+                GetMessageCode(messageCode)),
+                VASP = vasp
+            };
         }
-
+        
+        [JsonProperty("msg")]
         public Message Message { get; private set; }
 
+        [JsonProperty("vasp")]
         public VaspInformation VASP { get; private set; }
 
         public TerminationMessageCode GetMessageCode()

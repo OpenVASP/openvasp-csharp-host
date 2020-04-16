@@ -1,4 +1,6 @@
-﻿namespace OpenVASP.Messaging.Messages.Entities
+﻿using Newtonsoft.Json;
+
+namespace OpenVASP.Messaging.Messages.Entities
 {
     public class Beneficiary
     {
@@ -8,8 +10,10 @@
             VAAN = vaan;
         }
 
+        [JsonProperty("name")]
         public string Name { get; set; }
 
+        [JsonProperty("vaan")]
         public string VAAN { get; set; }
     }
 }

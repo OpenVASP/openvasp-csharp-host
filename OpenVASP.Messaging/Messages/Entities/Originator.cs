@@ -1,4 +1,6 @@
-﻿namespace OpenVASP.Messaging.Messages.Entities
+﻿using Newtonsoft.Json;
+
+namespace OpenVASP.Messaging.Messages.Entities
 {
     public class Originator
     {
@@ -20,18 +22,25 @@
             BIC = bic ?? string.Empty;
         }
 
+        [JsonProperty("name")]
         public string Name { get; set; }
 
+        [JsonProperty("vaan")]
         public string VAAN { get; set; }
 
+        [JsonProperty("address")]
         public PostalAddress PostalAddress { get; set; }
 
+        [JsonProperty("birth")]
         public PlaceOfBirth PlaceOfBirth { get; set; }
 
+        [JsonProperty("nat")]
         public NaturalPersonId[] NaturalPersonId { get; set; }
 
+        [JsonProperty("jur")]
         public JuridicalPersonId[] JuridicalPersonId { get; set; }
 
+        [JsonProperty("bic")]
         public string BIC { get; set; }
 
         public static Originator CreateOriginatorForNaturalPerson(

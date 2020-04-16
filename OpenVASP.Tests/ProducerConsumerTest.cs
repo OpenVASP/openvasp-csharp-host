@@ -34,7 +34,7 @@ namespace OpenVASP.Tests
             using (var producerConsumerQueue =
                 new ProducerConsumerQueue(messageResolverBuilder.Build(), cancellationTokenSource.Token))
             {
-                var sessionRequestMessage = new SessionRequestMessage(
+                var sessionRequestMessage = SessionRequestMessage.Create(
                     "123",
                     new HandShakeRequest("1", "1"),
                     new VaspInformation("1", "1", "1", null, null, null, null, ""));

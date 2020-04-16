@@ -7,7 +7,6 @@ using OpenVASP.CSharpClient;
 using OpenVASP.Messaging;
 using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;
-using OpenVASP.ProtoMappers;
 using Xunit;
 using Transaction = OpenVASP.Messaging.Messages.Entities.Transaction;
 
@@ -497,10 +496,9 @@ namespace OpenVASP.Tests
                 },
                 "DEUTDEFF");
 
-            var request = new SessionRequestMessage(message, handshake, vaspInformation)
-            {
-                Comment = "This is test message",
-            };
+            var request = SessionRequestMessage.Create(message, handshake, vaspInformation);
+            request.Comment = "This is test message";
+            
             return request;
         }
 
@@ -544,11 +542,9 @@ namespace OpenVASP.Tests
                 },
                 "DEUTDEFF");
 
-            var request = new SessionReplyMessage(message, handshake, vaspInformation)
-            {
-                Comment = "This is test message",
-            };
-
+            var request = SessionReplyMessage.Create(message, handshake, vaspInformation);
+            request.Comment = "This is test message";
+            
             return request;
         }
 
@@ -606,10 +602,9 @@ namespace OpenVASP.Tests
 
             var transferRequest = new TransferRequest(VirtualAssetType.ETH, TransferType.BlockchainTransfer, "10000000");
 
-            var request = new TransferRequestMessage(message, originator, beneficiary, transferRequest, vaspInformation)
-            {
-                Comment = "This is test message",
-            };
+            var request =
+                TransferRequestMessage.Create(message, originator, beneficiary, transferRequest, vaspInformation);
+            request.Comment = "This is test message";
 
             return request;
         }
@@ -668,10 +663,8 @@ namespace OpenVASP.Tests
 
             var transferReply = new TransferReply(VirtualAssetType.ETH, TransferType.BlockchainTransfer, "10000000", "0x0000001");
 
-            var request = new TransferReplyMessage(message, originator, beneficiary, transferReply, vaspInformation)
-            {
-                Comment = "This is test message",
-            };
+            var request = TransferReplyMessage.Create(message, originator, beneficiary, transferReply, vaspInformation);
+            request.Comment = "This is test message";
 
             return request;
         }
@@ -731,10 +724,8 @@ namespace OpenVASP.Tests
             var transferReply = new TransferReply(VirtualAssetType.ETH, TransferType.BlockchainTransfer, "10000000", "0x0000001");
             var transaction = new Transaction("txId", DateTime.UtcNow, "0x0000002");
 
-            var request = new TransferDispatchMessage(message, originator, beneficiary, transferReply, transaction, vaspInformation)
-            {
-                Comment = "This is test message",
-            };
+            var request = TransferDispatchMessage.Create(message, originator, beneficiary, transferReply, transaction, vaspInformation);
+            request.Comment = "This is test message";
 
             return request;
         }
@@ -794,10 +785,8 @@ namespace OpenVASP.Tests
             var transferReply = new TransferReply(VirtualAssetType.ETH, TransferType.BlockchainTransfer, "10000000", "0x0000001");
             var transaction = new Transaction("txId", DateTime.UtcNow, "0x0000002");
 
-            var request = new TransferConfirmationMessage(message, originator, beneficiary, transferReply, transaction, vaspInformation)
-            {
-                Comment = "This is test message",
-            };
+            var request = TransferConfirmationMessage.Create(message, originator, beneficiary, transferReply, transaction, vaspInformation);
+            request.Comment = "This is test message";
 
             return request;
         }
@@ -838,10 +827,8 @@ namespace OpenVASP.Tests
                 },
                 "DEUTDEFF");
 
-            var request = new TerminationMessage(message, vaspInformation)
-            {
-                Comment = "This is test message",
-            };
+            var request = TerminationMessage.Create(message, vaspInformation);
+            request.Comment = "This is test message";
             return request;
         }
     }

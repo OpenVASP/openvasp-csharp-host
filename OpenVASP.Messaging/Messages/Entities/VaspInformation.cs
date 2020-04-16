@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using Newtonsoft.Json;
 
 namespace OpenVASP.Messaging.Messages.Entities
 {
@@ -24,20 +25,28 @@ namespace OpenVASP.Messaging.Messages.Entities
             BIC = bic;
         }
 
+        [JsonProperty("name")]
         public string Name { get; set; }
 
+        [JsonProperty("id")]
         public string VaspIdentity { get; set; }
 
+        [JsonProperty("pk")]
         public string VaspPublickKey { get; set; }
 
+        [JsonProperty("address")]
         public PostalAddress PostalAddress { get; set; }
 
+        [JsonProperty("birth")]
         public PlaceOfBirth PlaceOfBirth { get; set; }
 
+        [JsonProperty("nat")]
         public NaturalPersonId[] NaturalPersonIds { get; set; }
 
+        [JsonProperty("jur")]
         public JuridicalPersonId[] JuridicalPersonIds { get; set; }
 
+        [JsonProperty("bic")]
         public string BIC { get; set; }
 
         public string GetVaspCode()

@@ -2,9 +2,8 @@ using Autofac;
 using Nethereum.Web3;
 using OpenVASP.CSharpClient;
 using OpenVASP.CSharpClient.Interfaces;
-using OpenVASP.ProtoMappers;
 using OpenVASP.Host.Services;
-using OpenVASP.Tests.Client;
+using OpenVASP.Messaging;
 
 namespace OpenVASP.Host.Modules
 {

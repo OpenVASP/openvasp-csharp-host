@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Newtonsoft.Json;
 
 namespace OpenVASP.Messaging.Messages.Entities
 {
@@ -270,5 +273,19 @@ namespace OpenVASP.Messaging.Messages.Entities
             {"ZW" , new Country("Zimbabwe", "ZW")},
             {"AX" , new Country("Åland Islands", "AX")}
         };
+    }
+
+    public class CountryConverter : JsonConverter<Country>
+    {
+        public override void WriteJson(JsonWriter writer, Country value, JsonSerializer serializer)
+        {
+            writer.WriteValue(value.ToString());
+        }
+
+        public override Country ReadJson(JsonReader reader, Type objectType, Country existingValue, bool hasExistingValue,
+            JsonSerializer serializer)
+        {
+            return Country.List[(string)reader.Value];
+        }
     }
 }

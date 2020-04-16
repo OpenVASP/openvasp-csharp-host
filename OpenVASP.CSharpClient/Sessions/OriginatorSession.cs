@@ -86,7 +86,7 @@ namespace OpenVASP.CSharpClient.Sessions
             //string beneficiaryVaspContractAddress = await _ensProvider.GetContractAddressByVaspCodeAsync(_beneficiaryVaan.VaspCode);
             //await _ethereumRpc.GetVaspContractInfoAync()
 
-            var sessionRequestMessage = new SessionRequestMessage(
+            var sessionRequestMessage = SessionRequestMessage.Create(
                 this.SessionId,
                 new HandShakeRequest(this._sessionTopic, this._pubEncryptionKey),
                 this._vaspInfo);
@@ -102,7 +102,7 @@ namespace OpenVASP.CSharpClient.Sessions
 
         public async Task TransferRequestAsync(TransferInstruction instruction)
         {
-            var transferRequest = new TransferRequestMessage(
+            var transferRequest = TransferRequestMessage.Create(
                 this.SessionId,
                 _originator,
                 new Beneficiary(instruction.BeneficiaryName ?? string.Empty, _beneficiaryVaan.Vaan),
@@ -124,7 +124,7 @@ namespace OpenVASP.CSharpClient.Sessions
 
         public async Task TransferDispatchAsync(TransferReply transferReply, Transaction transaction)
         {
-            var transferRequest = new TransferDispatchMessage(
+            var transferRequest = TransferDispatchMessage.Create(
                 this.SessionId,
                 this._originator,
                 new Beneficiary("", _beneficiaryVaan.Vaan),

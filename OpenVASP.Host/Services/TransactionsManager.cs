@@ -167,7 +167,7 @@ namespace OpenVASP.Host.Services
             if(transaction == null || transaction.Status != TransactionStatus.TransferDispatched)
                 return; //todo: handle this case.
 
-            await _vaspSessionsManager.TransferConfirmAsync(transaction.SessionId, new TransferConfirmationMessage(
+            await _vaspSessionsManager.TransferConfirmAsync(transaction.SessionId, TransferConfirmationMessage.Create(
                 transaction.SessionId,
                 TransferConfirmationMessage.TransferConfirmationMessageCode.TransferConfirmed,
                 new Originator(
@@ -211,7 +211,7 @@ namespace OpenVASP.Host.Services
 
             await _vaspSessionsManager.TransferReplyAsync(
                 transaction.SessionId,
-                new TransferReplyMessage(
+                TransferReplyMessage.Create(
                     transaction.SessionId,
                     shouldAllowTransfer 
                         ? TransferReplyMessage.TransferReplyMessageCode.TransferAccepted
@@ -256,7 +256,7 @@ namespace OpenVASP.Host.Services
                 {
                     Street = message.Originator.PostalAddress.StreetName,
                     AddressLine = message.Originator.PostalAddress.AddressLine,
-                    Building = message.Originator.PostalAddress.BuildingNumber,
+                    Building = int.Parse(message.Originator.PostalAddress.BuildingNumber),
                     Country = message.Originator.PostalAddress.Country,
                     PostCode = message.Originator.PostalAddress.PostCode,
                     Town = message.Originator.PostalAddress.TownName

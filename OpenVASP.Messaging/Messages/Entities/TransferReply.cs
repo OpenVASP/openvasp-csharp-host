@@ -1,4 +1,6 @@
-﻿namespace OpenVASP.Messaging.Messages.Entities
+﻿using Newtonsoft.Json;
+
+namespace OpenVASP.Messaging.Messages.Entities
 {
     public class TransferReply
     {
@@ -14,12 +16,16 @@
             DestinationAddress = destinationAddress;
         }
 
+        [JsonProperty("destination")]
         public string DestinationAddress { get; private set; }
 
+        [JsonProperty("va")]
         public VirtualAssetType VirtualAssetType { get; private set; }
 
+        [JsonProperty("ttype")]
         public TransferType TransferType { get; private set; }
 
+        [JsonProperty("amount")]
         //ChooseType as BigInteger
         public string Amount { get; private set; }
     }

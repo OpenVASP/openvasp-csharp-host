@@ -10,14 +10,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Exceptions\" />
-    <Folder Include="Implementations\" />
+    <None Update="VASP.abi">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\OpenVASP.Messaging\OpenVASP.Messaging.csproj" />
     <ProjectReference Include="..\OpenVASP.ProtocolMessages\OpenVASP.ProtocolMessages.csproj" />
-    <ProjectReference Include="..\OpenVASP.ProtoMappers\OpenVASP.ProtoMappers.csproj" />
   </ItemGroup>
 
 </Project>
