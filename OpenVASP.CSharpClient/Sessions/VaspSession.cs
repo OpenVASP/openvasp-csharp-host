@@ -124,13 +124,6 @@ namespace OpenVASP.Tests.Client.Sessions
             }
         }
 
-        public virtual Task StartAsync()
-        {
-            StartTopicMonitoring();
-
-            return Task.CompletedTask;
-        }
-
         public void Wait()
         {
             try

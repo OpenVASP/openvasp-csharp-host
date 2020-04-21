@@ -1,4 +1,5 @@
 ﻿using System;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Newtonsoft.Json;
 using OpenVASP.Messaging.Messages.Entities;
 
@@ -15,12 +16,12 @@ namespace OpenVASP.Messaging.Messages
         {
             return new TransferRequestMessage
             {
-                MessageType = MessageType.TransferRequest,
+                //MessageType = MessageType.TransferRequest,
                 Message = message,
                 Originator = originator,
                 Beneficiary = beneficiary,
                 Transfer = transfer,
-                VASP = vasp
+                Vasp = vasp
             };
         }
 
@@ -33,12 +34,11 @@ namespace OpenVASP.Messaging.Messages
         {
             return new TransferRequestMessage
             {
-                MessageType = MessageType.TransferRequest,
-                Message = new Message(Guid.NewGuid().ToString(), sessionId, "1"),
+                Message = new Message(Guid.NewGuid().ToByteArray().ToHex(true), sessionId, "1", MessageType.TransferRequest),
                 Originator = originator,
                 Beneficiary = beneficiary,
                 Transfer = transfer,
-                VASP = vasp
+                Vasp = vasp
             };
         }
 
@@ -51,10 +51,7 @@ namespace OpenVASP.Messaging.Messages
         [JsonProperty("transfer")]
         public TransferRequest Transfer { get; private set; }
 
-        [JsonProperty("msg")]
-        public Message Message { get; private set; }
-
         [JsonProperty("vasp")]
-        public VaspInformation VASP { get; private set; }
+        public VaspInformation Vasp { get; private set; }
     }
 }

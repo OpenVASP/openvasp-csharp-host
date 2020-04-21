@@ -1,4 +1,5 @@
 ﻿using System;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Newtonsoft.Json;
 using OpenVASP.Messaging.Messages.Entities;
 
@@ -10,32 +11,28 @@ namespace OpenVASP.Messaging.Messages
         {
             return new SessionReplyMessage
             {
-                MessageType = MessageType.SessionReply,
+                //MessageType = MessageType.SessionReply,
                 Message = message,
                 HandShake = handshake,
-                VASP = vasp
+                Vasp = vasp
             };
         }
 
-        public static SessionReplyMessage Create(string sessionId, HandShakeResponse handshake, VaspInformation vasp)
+        public static SessionReplyMessage Create(string sessionId, SessionReplyMessageCode code, HandShakeResponse handshake, VaspInformation vasp)
         {
             return new SessionReplyMessage
             {
-                MessageType = MessageType.SessionReply,
-                Message = new Message(Guid.NewGuid().ToString(), sessionId, "1"),
+                Message = new Message(Guid.NewGuid().ToByteArray().ToHex(true), sessionId, GetMessageCode(code), MessageType.SessionReply),
                 HandShake = handshake,
-                VASP = vasp
+                Vasp = vasp
             };
         }
 
         [JsonProperty("handshake")]
         public HandShakeResponse HandShake { get; private set; }
 
-        [JsonProperty("msg")]
-        public Message Message { get; private set; }
-
         [JsonProperty("vasp")]
-        public VaspInformation VASP { get; private set; }
+        public VaspInformation Vasp { get; private set; }
 
         public static string GetMessageCode(SessionReplyMessageCode messageCode)
         {

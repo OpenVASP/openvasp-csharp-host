@@ -16,10 +16,10 @@ namespace OpenVASP.Messaging.Messages.Entities
             Name = name;
             VAAN = vaan;
             PostalAddress = postalAddress;
-            PlaceOfBirth = placeOfBirth ?? default;
-            NaturalPersonId = naturalPersonId ?? new NaturalPersonId[] {};
-            JuridicalPersonId = juridicalPersonId ?? new JuridicalPersonId[] {};
-            BIC = bic ?? string.Empty;
+            PlaceOfBirth = placeOfBirth;
+            NaturalPersonId = naturalPersonId;
+            JuridicalPersonId = juridicalPersonId;
+            BIC = bic;
         }
 
         [JsonProperty("name")]
@@ -31,16 +31,16 @@ namespace OpenVASP.Messaging.Messages.Entities
         [JsonProperty("address")]
         public PostalAddress PostalAddress { get; set; }
 
-        [JsonProperty("birth")]
+        [JsonProperty("birth", NullValueHandling=NullValueHandling.Ignore)]
         public PlaceOfBirth PlaceOfBirth { get; set; }
 
-        [JsonProperty("nat")]
+        [JsonProperty("nat", NullValueHandling=NullValueHandling.Ignore)]
         public NaturalPersonId[] NaturalPersonId { get; set; }
 
-        [JsonProperty("jur")]
+        [JsonProperty("jur", NullValueHandling=NullValueHandling.Ignore)]
         public JuridicalPersonId[] JuridicalPersonId { get; set; }
 
-        [JsonProperty("bic")]
+        [JsonProperty("bic", NullValueHandling=NullValueHandling.Ignore)]
         public string BIC { get; set; }
 
         public static Originator CreateOriginatorForNaturalPerson(

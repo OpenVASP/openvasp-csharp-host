@@ -8,7 +8,7 @@ namespace OpenVASP.Messaging.Messages.Entities
         public VaspInformation(
             string name, 
             string vaspIdentity, 
-            string vaspPublickKey, 
+            string vaspPublicKey, 
             PostalAddress postalAddress, 
             PlaceOfBirth placeOfBirth, 
             NaturalPersonId[] naturalPersonIds, 
@@ -17,7 +17,7 @@ namespace OpenVASP.Messaging.Messages.Entities
         {
             Name = name;
             VaspIdentity = vaspIdentity;
-            VaspPublickKey = vaspPublickKey;
+            VaspPublickKey = vaspPublicKey;
             PostalAddress = postalAddress;
             PlaceOfBirth = placeOfBirth;
             NaturalPersonIds = naturalPersonIds;
@@ -37,16 +37,16 @@ namespace OpenVASP.Messaging.Messages.Entities
         [JsonProperty("address")]
         public PostalAddress PostalAddress { get; set; }
 
-        [JsonProperty("birth")]
+        [JsonProperty("birth", NullValueHandling=NullValueHandling.Ignore)]
         public PlaceOfBirth PlaceOfBirth { get; set; }
 
-        [JsonProperty("nat")]
+        [JsonProperty("nat", NullValueHandling=NullValueHandling.Ignore)]
         public NaturalPersonId[] NaturalPersonIds { get; set; }
 
-        [JsonProperty("jur")]
+        [JsonProperty("jur", NullValueHandling=NullValueHandling.Ignore)]
         public JuridicalPersonId[] JuridicalPersonIds { get; set; }
 
-        [JsonProperty("bic")]
+        [JsonProperty("bic", NullValueHandling=NullValueHandling.Ignore)]
         public string BIC { get; set; }
 
         public string GetVaspCode()

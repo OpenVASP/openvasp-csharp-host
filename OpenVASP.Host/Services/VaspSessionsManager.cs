@@ -48,18 +48,17 @@ namespace OpenVASP.Host.Services
                 });
             
             IVaspMessageHandler vaspMessageHandler = new VaspMessageHandlerCallbacks(
-                vaspInfo => Task.FromResult(true),
                 async (request, currentSession) =>
                 {
                     _beneficiarySessions[currentSession.SessionId] = currentSession as BeneficiarySession;
-                    await vaspCallbacks.TransferRequestMessageReceivedAsync(currentSession.SessionId, request);
-                    return null;
+                    await vaspCallbacks.SessionRequestMessageReceivedAsync(currentSession.SessionId, request);
                 },
-                async (dispatch, currentSession) =>
+                async (request, currentSession) =>
                 {
-                    await vaspCallbacks.TransferDispatchMessageReceivedAsync(currentSession.SessionId, dispatch);
-                    return null;
-                });
+                    await vaspCallbacks.TransferRequestMessageReceivedAsync(currentSession.SessionId, request);
+                },
+                async (dispatch, currentSession)
+                    => await vaspCallbacks.TransferDispatchMessageReceivedAsync(currentSession.SessionId, dispatch));
             
             _vaspClient.RunListener(vaspMessageHandler);
         }
@@ -73,6 +72,12 @@ namespace OpenVASP.Host.Services
             return originatorSession.SessionId;
         }
 
+        public async Task SessionReplyAsync(string sessionId, SessionReplyMessage.SessionReplyMessageCode code)
+        {
+            await _beneficiarySessions[sessionId]
+                .StartAsync(code);
+        }
+
         public async Task TransferRequestAsync(string sessionId, string beneficiaryName, VirtualAssetType type, decimal amount)
         {
             await _originatorSessions[sessionId]
@@ -83,7 +88,7 @@ namespace OpenVASP.Host.Services
                         {
                             TransferType = TransferType.BlockchainTransfer,
                             VirtualAssetType = type,
-                            TransferAmount = amount.ToString(CultureInfo.InvariantCulture)
+                            TransferAmount = amount
                         },
                         BeneficiaryName = beneficiaryName
                     });
@@ -94,7 +99,7 @@ namespace OpenVASP.Host.Services
             await _beneficiarySessions[sessionId].SendTransferReplyMessageAsync(message);
         }
 
-        public async Task TransferDispatchAsync(string sessionId, TransferReply transferReply, string transactionHash, string sendingAddress)
+        public async Task TransferDispatchAsync(string sessionId, TransferReply transferReply, string transactionHash, string sendingAddress, string beneficiaryName)
         {
             await _originatorSessions[sessionId]
                 .TransferDispatchAsync(
@@ -102,7 +107,8 @@ namespace OpenVASP.Host.Services
                     new Transaction(
                         transactionHash,
                         DateTime.UtcNow, 
-                        sendingAddress));
+                        sendingAddress),
+                    beneficiaryName);
         }
 
         public async Task TransferConfirmAsync(string sessionId, TransferConfirmationMessage message)

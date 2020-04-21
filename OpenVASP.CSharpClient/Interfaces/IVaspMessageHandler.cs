@@ -12,22 +12,20 @@ namespace OpenVASP.CSharpClient.Interfaces
         /// </summary>
         /// <param name="request">Info about originator vasp</param>
         /// <returns>Is originator vasp allowed to start a session</returns>
-        Task<bool> AuthorizeSessionRequestAsync(VaspInformation request);
+        Task AuthorizeSessionRequestAsync(SessionRequestMessage request, VaspSession vaspSession);
 
         /// <summary>
         /// Handle TransferRequestMessage from originator
         /// </summary>
         /// <param name="request">TransferRequestMessage</param>
         /// <param name="vaspSession">Session which processes a request</param>
-        /// <returns>TransferReplyMessage that will be sent to originator</returns>
-        Task<TransferReplyMessage> TransferRequestHandlerAsync(TransferRequestMessage request, VaspSession vaspSession);
+        Task TransferRequestHandlerAsync(TransferRequestMessage request, VaspSession vaspSession);
 
         /// <summary>
         /// Handle TransferDispatchMessage from originator
         /// </summary>
         /// <param name="request">TransferDispatchMessage</param>
         /// <param name="vaspSession">Session which processes a request</param>
-        /// <returns>TransferConfirmationMessage</returns>
-        Task<TransferConfirmationMessage> TransferDispatchHandlerAsync(TransferDispatchMessage request, VaspSession vaspSession);
+        Task TransferDispatchHandlerAsync(TransferDispatchMessage request, VaspSession vaspSession);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using Nethereum.Hex.HexConvertors.Extensions;
 using Newtonsoft.Json;
 using OpenVASP.Messaging.Messages.Entities;
 
@@ -10,9 +11,9 @@ namespace OpenVASP.Messaging.Messages
         {
             return new TerminationMessage
             {
-                MessageType = MessageType.Termination,
+                //MessageType = MessageType.Termination,
                 Message = message,
-                VASP = vasp,
+                Vasp = vasp,
             };
         }
 
@@ -20,20 +21,17 @@ namespace OpenVASP.Messaging.Messages
         {
             return new TerminationMessage
             {
-                MessageType = MessageType.Termination,
                 Message = new Message(
-                Guid.NewGuid().ToString(),
-                sessionId,
-                GetMessageCode(messageCode)),
-                VASP = vasp
+                Guid.NewGuid().ToByteArray().ToHex(true),
+                    sessionId,
+                    GetMessageCode(messageCode),
+                    MessageType.Termination),
+                Vasp = vasp
             };
         }
-        
-        [JsonProperty("msg")]
-        public Message Message { get; private set; }
 
         [JsonProperty("vasp")]
-        public VaspInformation VASP { get; private set; }
+        public VaspInformation Vasp { get; private set; }
 
         public TerminationMessageCode GetMessageCode()
         {

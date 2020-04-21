@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using OpenVASP.Host.Modules;
 using OpenVASP.Host.Services;
+using OpenVASP.Messaging.Messages.Entities;
 
 namespace OpenVASP.Host
 {
@@ -34,7 +36,7 @@ namespace OpenVASP.Host
             services
                 .AddControllersWithViews()
                 .AddNewtonsoftJson();
-
+            
             _appSettings = new AppSettings
             {
                 InstanceName = Configuration["AppSettings:InstanceName"],
@@ -42,8 +44,66 @@ namespace OpenVASP.Host
                 HandshakePrivateKeyHex = Configuration["AppSettings:HandshakePrivateKeyHex"],
                 SignaturePrivateKeyHex = Configuration["AppSettings:SignaturePrivateKeyHex"],
                 VaspSmartContractAddress = Configuration["AppSettings:VaspSmartContractAddress"],
-                WhisperRpcUri = Configuration["AppSettings:WhisperRpcUri"]
+                WhisperRpcUri = Configuration["AppSettings:WhisperRpcUri"],
+                VaspBic = string.IsNullOrWhiteSpace(Configuration.GetSection("AppSettings:VaspBic").Value)
+                    ? null
+                    : Configuration.GetSection("AppSettings:VaspBic").Value,
+                VaspJuridicalIds = Configuration.GetSection("AppSettings:VaspJuridicalIds").GetChildren().Count() != 0
+                    ? Configuration.GetSection("AppSettings:VaspJuridicalIds")
+                        .GetChildren()
+                        .Select(x =>
+                            new JuridicalPersonId(
+                                x.GetValue<string>("Id"),
+                                Enum.Parse<JuridicalIdentificationType>(x.GetValue<string>("Type")),
+                                Country.List[x.GetValue<string>("CountryCode")]))
+                        .ToArray()
+                    : null,
+                VaspNaturalIds = Configuration.GetSection("AppSettings:VaspNaturalIds").GetChildren().Count() != 0
+                    ? Configuration.GetSection("AppSettings:VaspNaturalIds")
+                        .GetChildren()
+                        .Select(x =>
+                            new NaturalPersonId(
+                                x.GetValue<string>("Id"),
+                                Enum.Parse<NaturalIdentificationType>(x.GetValue<string>("Type")),
+                                Country.List[x.GetValue<string>("CountryCode")]))
+                        .ToArray()
+                    : null,
+                VaspPlaceOfBirth = string.IsNullOrWhiteSpace(Configuration.GetSection("AppSettings:VaspPlaceOfBirth:Date").Value)
+                    ? null
+                    : new PlaceOfBirth(
+                        DateTime.Parse(Configuration["AppSettings:VaspPlaceOfBirth:Date"]),
+                        Configuration["AppSettings:VaspPlaceOfBirth:City"],
+                        Country.List[Configuration["AppSettings:VaspPlaceOfBirth:CountryCode"]])
             };
+
+            if (string.IsNullOrWhiteSpace(_appSettings.VaspBic))
+            {
+                _appSettings.VaspBic = null;
+            }
+
+            if (_appSettings.VaspPlaceOfBirth == null && _appSettings.VaspNaturalIds == null &&
+                _appSettings.VaspJuridicalIds == null && _appSettings.VaspBic == null)
+            {
+                throw new ArgumentException("Invalid configuration.");
+            }
+
+            if ((_appSettings.VaspPlaceOfBirth != null || _appSettings.VaspNaturalIds != null) &&
+                (_appSettings.VaspJuridicalIds != null || _appSettings.VaspBic != null))
+            {
+                throw new ArgumentException("Invalid configuration.");
+            }
+            
+            if (_appSettings.VaspJuridicalIds != null && ( _appSettings.VaspNaturalIds != null ||
+                _appSettings.VaspPlaceOfBirth != null || _appSettings.VaspBic != null))
+            {
+                throw new ArgumentException("Invalid configuration.");
+            }
+            
+            if (_appSettings.VaspBic != null && ( _appSettings.VaspNaturalIds != null ||
+                _appSettings.VaspPlaceOfBirth != null || _appSettings.VaspJuridicalIds != null))
+            {
+                throw new ArgumentException("Invalid configuration.");
+            }
             
             services.AddSwaggerGen(c =>
             {

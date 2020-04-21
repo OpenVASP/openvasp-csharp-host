@@ -4,7 +4,7 @@ namespace OpenVASP.CSharpClient
 {
     public class VirtualAssetTransfer
     {
-        public string TransferAmount { get; set; }
+        public decimal TransferAmount { get; set; }
 
         public TransferType TransferType { get; set; }
 

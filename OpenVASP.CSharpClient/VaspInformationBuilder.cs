@@ -13,27 +13,6 @@ namespace OpenVASP.CSharpClient
             this._nodeClientEthereumRpc = nodeClientEthereumRpc;
         }
 
-        public (VaspInformation VaspInformation, VaspContractInfo VaspContractInfo) Create(
-            string vaspSmartContractAddress)
-        {
-            var vaspContractInfo = _nodeClientEthereumRpc
-                .GetVaspContractInfoAync(vaspSmartContractAddress)
-                .GetAwaiter()
-                .GetResult();
-            
-            var vaspInformation = new VaspInformation(
-                vaspContractInfo.Name,
-                vaspSmartContractAddress,
-                vaspContractInfo.HandshakeKey,//Ensure it is correct
-                vaspContractInfo.Address,
-                null,
-                null,
-                null,
-                null);
-
-            return (vaspInformation, vaspContractInfo);
-        }
-
         public async Task<(VaspInformation VaspInformation, VaspContractInfo VaspContractInfo)> CreateForNaturalPersonAsync(
             string vaspSmartContractAddress,
             NaturalPersonId[] naturalPersonIds,

@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace OpenVASP.Messaging.Messages.Entities
 {
@@ -7,14 +8,14 @@ namespace OpenVASP.Messaging.Messages.Entities
         public TransferRequest(
             VirtualAssetType virtualAssetType,
             TransferType transferType, 
-            string amount)
+            decimal amount)
         {
             VirtualAssetType = virtualAssetType;
             TransferType = transferType;
             Amount = amount;
         }
 
-        [JsonProperty("va")]
+        [JsonProperty("va"), JsonConverter(typeof(StringEnumConverter))]
         public VirtualAssetType VirtualAssetType { get; private set; }
 
         [JsonProperty("ttype")]
@@ -22,7 +23,7 @@ namespace OpenVASP.Messaging.Messages.Entities
 
         [JsonProperty("amount")]
         //ChooseType as BigInteger
-        public string Amount { get; private set; }
+        public decimal Amount { get; private set; }
     }
 
     public enum VirtualAssetType

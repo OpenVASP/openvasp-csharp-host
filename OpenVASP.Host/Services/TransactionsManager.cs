@@ -16,35 +16,38 @@ namespace OpenVASP.Host.Services
 {
     public class TransactionsManager : IVaspCallbacks
     {
-        private readonly List<Core.Models.Transaction> _outgoingTransactions;
-        private readonly List<Core.Models.Transaction> _incomingTransactions;
+        private readonly List<Transaction> _outgoingTransactions;
+        private readonly List<Transaction> _incomingTransactions;
         private readonly VaspSessionsManager _vaspSessionsManager;
         private readonly VaspInformation _vaspInformation;
 
         public TransactionsManager(VaspClient vaspClient, VaspInformation vaspInformation)
         {
             _vaspInformation = vaspInformation;
-            _outgoingTransactions = new List<Core.Models.Transaction>();
-            _incomingTransactions = new List<Core.Models.Transaction>();
-            _vaspSessionsManager = new VaspSessionsManager(vaspClient,this);
+            _outgoingTransactions = new List<Transaction>();
+            _incomingTransactions = new List<Transaction>();
+            _vaspSessionsManager = new VaspSessionsManager(vaspClient, this);
         }
 
-        public async Task<Core.Models.Transaction> CreateOutgoingTransactionAsync(
+        public async Task<Transaction> CreateOutgoingTransactionAsync(
             string originatorFullName,
             string originatorVaan,
-            Core.Models.PlaceOfBirth originatorPlaceOfBirth,
-            Core.Models.PostalAddress originatorPostalAddress,
+            PlaceOfBirth originatorPlaceOfBirth,
+            PostalAddress originatorPostalAddress,
             string beneficiaryFullName,
             string beneficiaryVaan,
             VirtualAssetType asset,
-            decimal amount)
+            decimal amount,
+            NaturalPersonId[] naturalPersonIds,
+            JuridicalPersonId[] juridicalPersonIds,
+            string bic)
         {
             var sanitizedBeneficiaryVaan = beneficiaryVaan.Replace(" ", "");
             var sanitizedOriginatorVaan = originatorVaan.Replace(" ", "");
-            var beneficiaryVaspCode = sanitizedBeneficiaryVaan.Substring(0,8);
+            var beneficiaryVaspCode = sanitizedBeneficiaryVaan.Substring(0, 8);
             var beneficiaryCustomerSpecificNumber = sanitizedBeneficiaryVaan.Substring(8, 14);
 
-            var transaction = new Core.Models.Transaction
+            var transaction = new Transaction
             {
                 Status = TransactionStatus.Created,
                 OriginatorPostalAddress = originatorPostalAddress,
@@ -57,10 +60,13 @@ namespace OpenVASP.Host.Services
                 OriginatorVaan = sanitizedOriginatorVaan,
                 OriginatorFullName = originatorFullName,
                 BeneficiaryFullName = beneficiaryFullName,
+                OriginatorJuridicalPersonIds = juridicalPersonIds,
+                OriginatorBic = bic,
+                OriginatorNaturalPersonIds = naturalPersonIds,
                 SessionId = await _vaspSessionsManager.CreateSessionAsync(
                     new Originator(
                         originatorFullName,
-                        originatorVaan,
+                        sanitizedOriginatorVaan,
                         new OpenVASP.Messaging.Messages.Entities.PostalAddress
                         (
                             originatorPostalAddress.Street,
@@ -76,16 +82,15 @@ namespace OpenVASP.Host.Services
                             originatorPlaceOfBirth.Town,
                             originatorPlaceOfBirth.Country
                         ),
-                        null,
-                        null,
-                        null
-                    ),
+                        naturalPersonIds,
+                        juridicalPersonIds,
+                        bic),
                     VirtualAssetsAccountNumber.Create(beneficiaryVaspCode, beneficiaryCustomerSpecificNumber))
             };
 
             transaction.Status = TransactionStatus.SessionRequested;
-            
-            lock(_outgoingTransactions)
+
+            lock (_outgoingTransactions)
             {
                 _outgoingTransactions.Add(transaction);
             }
@@ -93,38 +98,85 @@ namespace OpenVASP.Host.Services
             return transaction;
         }
 
+        public async Task SessionRequestMessageReceivedAsync(string sessionId, SessionRequestMessage message)
+        {
+            var transaction = new Transaction
+            {
+                Status = TransactionStatus.SessionRequested,
+                Id = Guid.NewGuid().ToString(),
+                SessionId = sessionId,
+                CreationDateTime = DateTime.UtcNow
+            };
+
+            lock (_incomingTransactions)
+            {
+                _incomingTransactions.Add(transaction);
+            }
+        }
+
+        public async Task SendSessionReplyAsync(string id, SessionReplyMessage.SessionReplyMessageCode code)
+        {
+            var transaction = _incomingTransactions.SingleOrDefault(x => x.Id == id);
+
+            if (transaction == null || transaction.Status != TransactionStatus.SessionRequested)
+                return; //todo: handle properly
+
+            await _vaspSessionsManager.SessionReplyAsync(transaction.SessionId, code);
+
+            if (code == SessionReplyMessage.SessionReplyMessageCode.SessionAccepted)
+            {
+                transaction.Status = TransactionStatus.SessionConfirmed;
+            }
+            else
+            {
+                transaction.Status = TransactionStatus.SessionDeclined;
+                transaction.SessionDeclineCode = SessionReplyMessage.GetMessageCode(code);
+            }
+        }
+
         public async Task SessionReplyMessageReceivedAsync(string sessionId, SessionReplyMessage message)
         {
             var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == sessionId);
 
-            if(transaction == null)
+            if (transaction == null)
                 return; //todo: handle this case.
 
-            transaction.Status = TransactionStatus.SessionConfirmed;
-            
-            await _vaspSessionsManager.TransferRequestAsync(
-                transaction.SessionId,
-                transaction.BeneficiaryFullName,
-                transaction.Asset,
-                transaction.Amount);
+            if (message.Message.MessageCode ==
+                SessionReplyMessage.GetMessageCode(SessionReplyMessage.SessionReplyMessageCode.SessionAccepted))
+            {
+                transaction.Status = TransactionStatus.SessionConfirmed;
 
-            transaction.Status = TransactionStatus.TransferRequested;
+                await _vaspSessionsManager.TransferRequestAsync(
+                    transaction.SessionId,
+                    transaction.BeneficiaryFullName,
+                    transaction.Asset,
+                    transaction.Amount);
+
+                transaction.Status = TransactionStatus.TransferRequested;
+            }
+            else
+            {
+                transaction.Status = TransactionStatus.SessionDeclined;
+                transaction.SessionDeclineCode = message.Message.MessageCode;
+            }
         }
 
         public async Task TransferReplyMessageReceivedAsync(string sessionId, TransferReplyMessage message)
         {
             var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == sessionId);
 
-            if(transaction == null || transaction.Status != TransactionStatus.TransferRequested)
+            if (transaction == null || transaction.Status != TransactionStatus.TransferRequested)
                 return; //todo: handle this case.
-            
-            transaction.Status = message.Message.MessageCode == "5"
-                ? TransactionStatus.TransferForbidden
-                : TransactionStatus.TransferAllowed;
 
-            if (transaction.Status == TransactionStatus.TransferAllowed)
+            if (message.Message.MessageCode == TransferReplyMessage.GetMessageCode(TransferReplyMessage.TransferReplyMessageCode.TransferAccepted))
             {
+                transaction.Status = TransactionStatus.TransferAllowed;
                 transaction.DestinationAddress = message.Transfer.DestinationAddress;
+            }
+            else
+            {
+                transaction.Status = TransactionStatus.TransferForbidden;
+                transaction.TransferDeclineCode = message.Message.MessageCode;
             }
         }
 
@@ -132,7 +184,7 @@ namespace OpenVASP.Host.Services
         {
             var transaction = _outgoingTransactions.SingleOrDefault(x => x.Id == id);
 
-            if(transaction == null || transaction.Status != TransactionStatus.TransferAllowed)
+            if (transaction == null || transaction.Status != TransactionStatus.TransferAllowed)
                 return; //todo: handle this case.
 
             await _vaspSessionsManager.TransferDispatchAsync(
@@ -140,21 +192,23 @@ namespace OpenVASP.Host.Services
                 new TransferReply(
                     transaction.Asset,
                     TransferType.BlockchainTransfer,
-                    transaction.Amount.ToString(CultureInfo.InvariantCulture),
+                    transaction.Amount,
                     transaction.DestinationAddress),
                 transactionHash,
-                sendingAddress);
+                sendingAddress,
+                transaction.BeneficiaryFullName);
 
             transaction.TransactionHash = transactionHash;
             transaction.SendingAddress = sendingAddress;
             transaction.Status = TransactionStatus.TransferDispatched;
         }
 
-        public async Task TransferConfirmationMessageReceivedAsync(string sessionId, TransferConfirmationMessage message)
+        public async Task TransferConfirmationMessageReceivedAsync(string sessionId,
+            TransferConfirmationMessage message)
         {
             var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == sessionId);
 
-            if(transaction == null || transaction.Status != TransactionStatus.TransferDispatched)
+            if (transaction == null || transaction.Status != TransactionStatus.TransferDispatched)
                 return; //todo: handle this case.
 
             transaction.Status = TransactionStatus.TransferConfirmed;
@@ -164,7 +218,7 @@ namespace OpenVASP.Host.Services
         {
             var transaction = _incomingTransactions.SingleOrDefault(x => x.Id == id);
 
-            if(transaction == null || transaction.Status != TransactionStatus.TransferDispatched)
+            if (transaction == null || transaction.Status != TransactionStatus.TransferDispatched)
                 return; //todo: handle this case.
 
             await _vaspSessionsManager.TransferConfirmAsync(transaction.SessionId, TransferConfirmationMessage.Create(
@@ -184,14 +238,14 @@ namespace OpenVASP.Host.Services
                         transaction.OriginatorPlaceOfBirth.Date,
                         transaction.OriginatorPlaceOfBirth.Town,
                         transaction.OriginatorPlaceOfBirth.Country),
-                    null,
-                    null,
-                    null),
+                    transaction.OriginatorNaturalPersonIds,
+                    transaction.OriginatorJuridicalPersonIds,
+                    transaction.OriginatorBic),
                 new Beneficiary(transaction.BeneficiaryFullName, transaction.BeneficiaryVaan),
                 new TransferReply(
                     transaction.Asset,
                     TransferType.BlockchainTransfer,
-                    transaction.Amount.ToString(CultureInfo.InvariantCulture),
+                    transaction.Amount,
                     transaction.DestinationAddress),
                 new OpenVASP.Messaging.Messages.Entities.Transaction(
                     transaction.TransactionHash,
@@ -202,20 +256,18 @@ namespace OpenVASP.Host.Services
             transaction.Status = TransactionStatus.TransferConfirmed;
         }
 
-        public async Task SendTransferReplyAsync(string id, string destinationAddress, bool shouldAllowTransfer)
+        public async Task SendTransferReplyAsync(string id, string destinationAddress, TransferReplyMessage.TransferReplyMessageCode code)
         {
             var transaction = _incomingTransactions.SingleOrDefault(x => x.Id == id);
 
-            if(transaction == null || transaction.Status != TransactionStatus.TransferRequested)
+            if (transaction == null || transaction.Status != TransactionStatus.TransferRequested)
                 return; //todo: handle this case.
 
             await _vaspSessionsManager.TransferReplyAsync(
                 transaction.SessionId,
                 TransferReplyMessage.Create(
                     transaction.SessionId,
-                    shouldAllowTransfer 
-                        ? TransferReplyMessage.TransferReplyMessageCode.TransferAccepted
-                        : TransferReplyMessage.TransferReplyMessageCode.TransferDeclinedTransferNotAuthorized,
+                    code,
                     new Originator(
                         transaction.OriginatorFullName,
                         transaction.OriginatorVaan,
@@ -230,58 +282,65 @@ namespace OpenVASP.Host.Services
                             transaction.OriginatorPlaceOfBirth.Date,
                             transaction.OriginatorPlaceOfBirth.Town,
                             transaction.OriginatorPlaceOfBirth.Country),
-                        null,
-                        null,
-                        null), 
+                        transaction.OriginatorNaturalPersonIds,
+                        transaction.OriginatorJuridicalPersonIds,
+                        transaction.OriginatorBic),
                     new Beneficiary(transaction.BeneficiaryFullName, transaction.BeneficiaryVaan),
                     new TransferReply(
                         transaction.Asset,
                         TransferType.BlockchainTransfer,
-                        transaction.Amount.ToString(CultureInfo.InvariantCulture),
+                        transaction.Amount,
                         destinationAddress),
                     _vaspInformation));
 
-            transaction.Status = shouldAllowTransfer 
-                ? TransactionStatus.TransferAllowed
-                : TransactionStatus.TransferForbidden;
-            transaction.DestinationAddress = destinationAddress;
+            if (code == TransferReplyMessage.TransferReplyMessageCode.TransferAccepted)
+            {
+                transaction.Status = TransactionStatus.TransferAllowed;
+                transaction.DestinationAddress = destinationAddress;
+            }
+            else
+            {
+                transaction.Status = TransactionStatus.TransferForbidden;
+                transaction.TransferDeclineCode = TransferReplyMessage.GetMessageCode(code);
+            }
         }
 
         public Task TransferRequestMessageReceivedAsync(string sessionId, TransferRequestMessage message)
         {
-            var transaction = new Core.Models.Transaction
+            var transaction = _incomingTransactions.Single(x => x.SessionId == sessionId);
+
+
+            transaction.Status = TransactionStatus.TransferRequested;
+            transaction.OriginatorPostalAddress = new PostalAddress
             {
-                Status = TransactionStatus.TransferRequested,
-                OriginatorPostalAddress = new Core.Models.PostalAddress
-                {
-                    Street = message.Originator.PostalAddress.StreetName,
-                    AddressLine = message.Originator.PostalAddress.AddressLine,
-                    Building = int.Parse(message.Originator.PostalAddress.BuildingNumber),
-                    Country = message.Originator.PostalAddress.Country,
-                    PostCode = message.Originator.PostalAddress.PostCode,
-                    Town = message.Originator.PostalAddress.TownName
-                },
-                OriginatorPlaceOfBirth = new Core.Models.PlaceOfBirth
-                {
-                    Country = message.Originator.PlaceOfBirth.CountryOfBirth,
-                    Date = message.Originator.PlaceOfBirth.DateOfBirth,
-                    Town = message.Originator.PlaceOfBirth.CityOfBirth
-                },
-                Amount = decimal.Parse(message.Transfer.Amount),
-                Asset = message.Transfer.VirtualAssetType,
-                Id = Guid.NewGuid().ToString(),
-                CreationDateTime = DateTime.UtcNow,
-                BeneficiaryVaan = message.Beneficiary.VAAN.Replace(" ", ""),
-                OriginatorVaan = message.Originator.VAAN.Replace(" ", ""),
-                OriginatorFullName = message.Originator.Name,
-                BeneficiaryFullName = message.Beneficiary.Name,
-                SessionId = sessionId
+                Street = message.Originator.PostalAddress.StreetName,
+                AddressLine = message.Originator.PostalAddress.AddressLine,
+                Building = int.Parse(message.Originator.PostalAddress.BuildingNumber),
+                Country = message.Originator.PostalAddress.Country,
+                PostCode = message.Originator.PostalAddress.PostCode,
+                Town = message.Originator.PostalAddress.TownName
             };
-            
-            lock(_outgoingTransactions)
+            transaction.OriginatorPlaceOfBirth = new PlaceOfBirth
             {
-                _incomingTransactions.Add(transaction);
-            }
+                Country = message.Originator.PlaceOfBirth.CountryOfBirth,
+                Date = message.Originator.PlaceOfBirth.DateOfBirth,
+                Town = message.Originator.PlaceOfBirth.CityOfBirth
+            };
+            transaction.OriginatorJuridicalPersonIds = message.Originator.JuridicalPersonId?.Select(
+                    x => new JuridicalPersonId(x.Identifier, x.IdentificationType, x.IssuingCountry,
+                        x.NonStateIssuer))
+                .ToArray();
+            transaction.OriginatorNaturalPersonIds = message.Originator.NaturalPersonId?.Select(
+                    x => new NaturalPersonId(x.Identifier, x.IdentificationType, x.IssuingCountry,
+                        x.NonStateIssuer))
+                .ToArray();
+            transaction.OriginatorBic = message.Originator.BIC;
+            transaction.Amount = message.Transfer.Amount;
+            transaction.Asset = message.Transfer.VirtualAssetType;
+            transaction.BeneficiaryVaan = message.Beneficiary.VAAN.Replace(" ", "");
+            transaction.OriginatorVaan = message.Originator.VAAN.Replace(" ", "");
+            transaction.OriginatorFullName = message.Originator.Name;
+            transaction.BeneficiaryFullName = message.Beneficiary.Name;
 
             return Task.CompletedTask;
         }
@@ -290,20 +349,20 @@ namespace OpenVASP.Host.Services
         {
             var transaction = _incomingTransactions.SingleOrDefault(x => x.SessionId == sessionId);
 
-            if(transaction == null || transaction.Status != TransactionStatus.TransferAllowed)
+            if (transaction == null || transaction.Status != TransactionStatus.TransferAllowed)
                 return; //todo: handle this case.
 
             transaction.TransactionHash = message.Transaction.TransactionId;
             transaction.SendingAddress = message.Transaction.SendingAddress;
             transaction.Status = TransactionStatus.TransferDispatched;
         }
-        
-        public async Task<IReadOnlyList<Core.Models.Transaction>> GetOutgoingTransactionsAsync()
+
+        public async Task<IReadOnlyList<Transaction>> GetOutgoingTransactionsAsync()
         {
             return _outgoingTransactions;
         }
 
-        public async Task<IReadOnlyList<Core.Models.Transaction>> GetIncomingTransactionsAsync()
+        public async Task<IReadOnlyList<Transaction>> GetIncomingTransactionsAsync()
         {
             return _incomingTransactions;
         }

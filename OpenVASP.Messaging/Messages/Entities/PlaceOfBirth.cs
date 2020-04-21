@@ -1,5 +1,6 @@
 ﻿using System;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace OpenVASP.Messaging.Messages.Entities
 {
@@ -13,6 +14,7 @@ namespace OpenVASP.Messaging.Messages.Entities
         }
 
         [JsonProperty("birthdate")]
+        [JsonConverter(typeof(DateFormatConverter), "yyyyMMdd")]
         public DateTime DateOfBirth { get; private set; }
 
         [JsonProperty("birthcity")]
@@ -21,5 +23,13 @@ namespace OpenVASP.Messaging.Messages.Entities
         [JsonProperty("birthcountry")]
         [JsonConverter(typeof(CountryConverter))]
         public Country CountryOfBirth { get; private set; }
+    }
+    
+    public class DateFormatConverter : IsoDateTimeConverter
+    {
+        public DateFormatConverter(string format)
+        {
+            DateTimeFormat = format;
+        }
     }
 }

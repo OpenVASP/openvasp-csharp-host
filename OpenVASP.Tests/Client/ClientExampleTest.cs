@@ -114,10 +114,7 @@ namespace OpenVASP.Tests.Client
             var beneficiaryVaan = VirtualAssetsAccountNumber.Create(vaspInfoJuridical.GetVaspCode(), "524ee3fb082809");
 
             IVaspMessageHandler messageHandler = new VaspMessageHandlerCallbacks(
-                (vaspInfo) =>
-                {
-                    return Task.FromResult(true);
-                },
+                (vaspInfo, vaspSession) => Task.FromResult(SessionReplyMessage.SessionReplyMessageCode.SessionAccepted),
                 (request, currentSession) =>
                 {
                     var message = TransferReplyMessage.Create(currentSession.SessionId, TransferReplyMessage.TransferReplyMessageCode.TransferAccepted,
@@ -128,7 +125,7 @@ namespace OpenVASP.Tests.Client
                             request.Transfer.TransferType, 
                             request.Transfer.Amount, 
                             "0x0"),
-                        request.VASP);
+                        request.Vasp);
 
                     return Task.FromResult(message);
                 },
@@ -140,7 +137,7 @@ namespace OpenVASP.Tests.Client
                         dispatch.Beneficiary,
                         dispatch.Transfer,
                         dispatch.Transaction,
-                        dispatch.VASP);
+                        dispatch.Vasp);
 
                     return Task.FromResult(message);
                 });
@@ -180,14 +177,14 @@ namespace OpenVASP.Tests.Client
                             {
                                 TransferType = TransferType.BlockchainTransfer,
                                 VirtualAssetType = VirtualAssetType.ETH,
-                                TransferAmount = "1000000000000000000"
+                                TransferAmount = 1000000000000000000
                             }
                         });
                     },
                     (message, originatorSession) =>
                     {
                         return originatorSession.TransferDispatchAsync(message.Transfer,
-                            new Transaction("0xtxhash", DateTime.UtcNow, "0x0...a"));
+                            new Transaction("0xtxhash", DateTime.UtcNow, "0x0...a"), "");
                     },
                     async (message, originatorSession) =>
                     {

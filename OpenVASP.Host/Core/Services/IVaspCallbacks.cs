@@ -5,6 +5,7 @@ namespace OpenVASP.Host.Core.Services
 {
     public interface IVaspCallbacks
     {
+        Task SessionRequestMessageReceivedAsync(string sessionId, SessionRequestMessage message);
         Task SessionReplyMessageReceivedAsync(string sessionId, SessionReplyMessage message);
         Task TransferReplyMessageReceivedAsync(string sessionId, TransferReplyMessage message);
         Task TransferConfirmationMessageReceivedAsync(string sessionId, TransferConfirmationMessage message);

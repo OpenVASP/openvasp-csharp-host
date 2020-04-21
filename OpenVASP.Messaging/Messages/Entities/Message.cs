@@ -4,12 +4,16 @@ namespace OpenVASP.Messaging.Messages.Entities
 {
     public class Message
     {
-        public Message(string messageId, string sessionId, string messageCode)
+        public Message(string messageId, string sessionId, string messageCode, MessageType type)
         {
             MessageId = messageId;
             SessionId = sessionId;
             MessageCode = messageCode;
+            MessageType = type;
         }
+        
+        [JsonProperty("type")]
+        public MessageType MessageType { get; protected set; }
 
         [JsonProperty("msgid")]
         public string MessageId { get; private set; }

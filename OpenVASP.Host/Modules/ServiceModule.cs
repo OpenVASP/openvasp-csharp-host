@@ -1,9 +1,11 @@
+using System;
 using Autofac;
 using Nethereum.Web3;
 using OpenVASP.CSharpClient;
 using OpenVASP.CSharpClient.Interfaces;
 using OpenVASP.Host.Services;
 using OpenVASP.Messaging;
+using OpenVASP.Messaging.Messages.Entities;
 
 namespace OpenVASP.Host.Modules
 {
@@ -31,9 +33,35 @@ namespace OpenVASP.Host.Modules
 
             var vaspInformationBuilder = new VaspInformationBuilder(_ethereumRpc);
 
-            var (vaspInfo, vaspContractInfo) = vaspInformationBuilder.Create(
-                _appSettings.VaspSmartContractAddress);
+            VaspInformation vaspInfo;
+            VaspContractInfo vaspContractInfo;
 
+            if (_appSettings.VaspBic != null)
+            {
+                (vaspInfo, vaspContractInfo) = vaspInformationBuilder
+                    .CreateForBankAsync(_appSettings.VaspSmartContractAddress, _appSettings.VaspBic)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            else if (_appSettings.VaspJuridicalIds != null)
+            {
+                (vaspInfo, vaspContractInfo) = vaspInformationBuilder
+                    .CreateForJuridicalPersonAsync(_appSettings.VaspSmartContractAddress, _appSettings.VaspJuridicalIds)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            else if (_appSettings.VaspNaturalIds != null)
+            {
+                (vaspInfo, vaspContractInfo) = vaspInformationBuilder
+                    .CreateForNaturalPersonAsync(_appSettings.VaspSmartContractAddress, _appSettings.VaspNaturalIds, _appSettings.VaspPlaceOfBirth)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            else
+            {
+                throw new ArgumentException("Invalid configuration.");
+            }
+            
             var originator = VaspClient.Create(
                 vaspInfo,
                 vaspContractInfo,
@@ -48,6 +76,7 @@ namespace OpenVASP.Host.Modules
             builder.RegisterInstance(vaspInfo);
             builder.RegisterInstance(vaspContractInfo);
             builder.RegisterInstance(originator);
+            builder.RegisterInstance(_appSettings);
             
             builder.RegisterType<TransactionsManager>()
                 .SingleInstance()

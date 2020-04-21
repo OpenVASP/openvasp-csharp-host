@@ -2,6 +2,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using OpenVASP.Host.Services;
+using OpenVASP.Messaging.Messages;
 
 namespace OpenVASP.Host.Controllers
 {
@@ -46,16 +47,33 @@ namespace OpenVASP.Host.Controllers
         /// <param name="shouldAllow">Whether or not the host allows the transaction.</param>
         /// <param name="destinationAddress">The (blockchain) destination address of the beneficiary.</param>
         /// <returns>The updated transaction.</returns>
-        [HttpPut("{id}/reply")]
+        [HttpPut("{id}/sessionReply")]
+        public async Task<IActionResult> SendSessionReplyAsync(
+            [FromRoute] string id,
+            [FromQuery] SessionReplyMessage.SessionReplyMessageCode code)
+        {
+            await _transactionsManager.SendSessionReplyAsync(id, code);
+
+            return await GetIncomingTransactionAsync(id);
+        }
+        
+        /// <summary>
+        /// Send a TransferReply message for the given transaction.
+        /// </summary>
+        /// <param name="id">The Id of the transaction.</param>
+        /// <param name="shouldAllow">Whether or not the host allows the transaction.</param>
+        /// <param name="destinationAddress">The (blockchain) destination address of the beneficiary.</param>
+        /// <returns>The updated transaction.</returns>
+        [HttpPut("{id}/transferReply")]
         public async Task<IActionResult> SendTransferReplyAsync(
             [FromRoute] string id,
-            [FromQuery] bool shouldAllow,
+            [FromQuery] TransferReplyMessage.TransferReplyMessageCode code,
             [FromQuery] string destinationAddress)
         {
             await _transactionsManager.SendTransferReplyAsync(
                 id,
-                destinationAddress ?? string.Empty,
-                shouldAllow);
+                destinationAddress,
+                code);
 
             return await GetIncomingTransactionAsync(id);
         }
@@ -65,7 +83,7 @@ namespace OpenVASP.Host.Controllers
         /// </summary>
         /// <param name="id">The Id of the transaction.</param>
         /// <returns>The updated transaction.</returns>
-        [HttpPut("{id}/confirm")]
+        [HttpPut("{id}/transferConfirm")]
         public async Task<IActionResult> SendTransferConfirmAsync(
             [FromRoute] string id)
         {

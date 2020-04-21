@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Nethereum.Hex.HexConvertors.Extensions;
 using OpenVASP.CSharpClient.Interfaces;
 using OpenVASP.Messaging;
 using OpenVASP.Messaging.Messages;
@@ -43,7 +44,7 @@ namespace OpenVASP.CSharpClient.Sessions
                 signService)
         {
             this._beneficiaryVaan = beneficiaryVaan;
-            this.SessionId = Guid.NewGuid().ToString();
+            this.SessionId = Guid.NewGuid().ToByteArray().ToHex(true);
             this._beneficiaryPubHandshakeKey = beneficiaryPubHandshakeKey;
             this._pubEncryptionKey = pubEncryptionKey;
             this._originatorVaspCallbacks = originatorVaspCallbacks;
@@ -79,9 +80,9 @@ namespace OpenVASP.CSharpClient.Sessions
                 }));
         }
 
-        public override async Task StartAsync()
+        public async Task StartAsync()
         {
-            await base.StartAsync();
+            StartTopicMonitoring();
 
             //string beneficiaryVaspContractAddress = await _ensProvider.GetContractAddressByVaspCodeAsync(_beneficiaryVaan.VaspCode);
             //await _ethereumRpc.GetVaspContractInfoAync()
@@ -122,12 +123,12 @@ namespace OpenVASP.CSharpClient.Sessions
             }, transferRequest);
         }
 
-        public async Task TransferDispatchAsync(TransferReply transferReply, Transaction transaction)
+        public async Task TransferDispatchAsync(TransferReply transferReply, Transaction transaction, string beneficiaryName)
         {
             var transferRequest = TransferDispatchMessage.Create(
                 this.SessionId,
                 this._originator,
-                new Beneficiary("", _beneficiaryVaan.Vaan),
+                new Beneficiary(beneficiaryName, _beneficiaryVaan.Vaan),
                 transferReply,
                 transaction,
                 _vaspInfo

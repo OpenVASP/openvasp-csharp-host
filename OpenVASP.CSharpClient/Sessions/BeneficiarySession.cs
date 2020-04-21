@@ -81,10 +81,10 @@ namespace OpenVASP.CSharpClient.Sessions
             }, message);
         }
 
-        public override async Task StartAsync()
+        public async Task StartAsync(SessionReplyMessage.SessionReplyMessageCode code)
         {
-            var reply = SessionReplyMessage.Create(this.SessionId, new HandShakeResponse(this.SessionTopic), this._vaspInfo);
-            this.CounterParty.VaspInfo = reply.VASP;
+            var reply = SessionReplyMessage.Create(this.SessionId, code, new HandShakeResponse(this.SessionTopic), this._vaspInfo);
+            this.CounterParty.VaspInfo = reply.Vasp;
             _sharedSymKeyId = await _whisperRpc.RegisterSymKeyAsync(_sharedKey);
 
             await _transportClient.SendAsync(new MessageEnvelope()
@@ -95,7 +95,7 @@ namespace OpenVASP.CSharpClient.Sessions
                 SigningKey = this._privateSigningKey
             }, reply);
 
-            await base.StartAsync();
+            StartTopicMonitoring();
         }
     }
 }
