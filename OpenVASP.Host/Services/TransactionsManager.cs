@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using OpenVASP.Host.Core.Models;
-using OpenVASP.Host.Core.Services;
 using OpenVASP.CSharpClient;
 using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;

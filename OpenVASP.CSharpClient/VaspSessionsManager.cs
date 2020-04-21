@@ -2,14 +2,13 @@ using System;
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Threading.Tasks;
-using OpenVASP.Host.Core.Services;
 using OpenVASP.CSharpClient;
 using OpenVASP.CSharpClient.Interfaces;
 using OpenVASP.CSharpClient.Sessions;
 using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;
 
-namespace OpenVASP.Host.Services
+namespace OpenVASP.CSharpClient
 {
     public class VaspSessionsManager
     {
@@ -34,7 +33,7 @@ namespace OpenVASP.Host.Services
                 async (message, originatorSession) =>
                 {
                     await vaspCallbacks.TransferReplyMessageReceivedAsync(originatorSession.SessionId, message);
-                    if (message.Message.MessageCode == "5") //todo: handle properly.
+                    if (message.Message.MessageCode != "1") //todo: handle properly.
                     {
                         await originatorSession.TerminateAsync(TerminationMessage.TerminationMessageCode.SessionClosedTransferOccured);
                         originatorSession.Wait();

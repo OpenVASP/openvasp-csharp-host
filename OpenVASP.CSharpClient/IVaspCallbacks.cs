@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using OpenVASP.Messaging.Messages;
 
-namespace OpenVASP.Host.Core.Services
+namespace OpenVASP.CSharpClient
 {
     public interface IVaspCallbacks
     {

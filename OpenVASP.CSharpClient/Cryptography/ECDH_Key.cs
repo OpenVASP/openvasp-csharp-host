@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.RLP;
+using OpenVASP.CSharpClient.Utils;
 using Org.BouncyCastle.Asn1.Sec;
 using Org.BouncyCastle.Asn1.X9;
 using Org.BouncyCastle.Crypto;
@@ -38,7 +39,7 @@ namespace OpenVASP.CSharpClient.Cryptography
 
         public string GenerateSharedSecretHex(string pubKeyHex)
         {
-            var pubKeyBytes = pubKeyHex.HexToByteArray();
+            var pubKeyBytes = pubKeyHex.ToStandardHex().HexToByteArray();
             var q = _curve.Curve.DecodePoint(pubKeyBytes);
             var remotePublicKey = new ECPublicKeyParameters("ECDH", q, _domain);
             var agreement = new ECDHBasicAgreement();
@@ -76,7 +77,7 @@ namespace OpenVASP.CSharpClient.Cryptography
         {
             if (keyPair.Public is ECPublicKeyParameters dhPublicKeyParameters)
             {
-                return dhPublicKeyParameters.Q.GetEncoded().ToHex(true);
+                return dhPublicKeyParameters.Q.GetEncoded().ToHex(true).ToOpenVaspHex();
             }
             throw new NullReferenceException("The key pair provided is not a valid ECDH keypair.");
         }
