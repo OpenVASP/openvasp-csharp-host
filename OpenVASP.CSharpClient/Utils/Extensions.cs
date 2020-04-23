@@ -9,7 +9,7 @@ namespace OpenVASP.CSharpClient.Utils
         
         public static string ToOpenVaspHex(this string s)
         {
-            return s.StartsWith("0x04") ? s.Substring(4) : s;
+            return s.StartsWith("0x04") ? "0x{s.Substring(4)}" : s;
         }
     }
 }

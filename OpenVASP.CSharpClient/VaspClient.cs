@@ -75,7 +75,6 @@ namespace OpenVASP.CSharpClient
         /// </summary>
         public event SessionTermination SessionTerminated;
 
-
         /// <summary>
         /// Notifies about session creation.
         /// </summary>
