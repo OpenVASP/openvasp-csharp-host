@@ -37,8 +37,13 @@ namespace OpenVASP.Host.Models.Request
         /// <summary>
         /// Originator place of birth.
         /// </summary>
-        [Required]
         public PlaceOfBirthModel OriginatorPlaceOfBirth { set; get; }
+        
+        public NaturalPersonIdModel[] OriginatorNaturalPersonIds { set; get; }
+        
+        public JuridicalPersonIdModel[] OriginatorJuridicalPersonIds { set; get; }
+        
+        public string OriginatorBic { set; get; }
         
         /// <summary>
         /// The asset of the transaction.

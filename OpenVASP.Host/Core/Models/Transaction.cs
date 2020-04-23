@@ -17,6 +17,12 @@ namespace OpenVASP.Host.Core.Models
         public PostalAddress OriginatorPostalAddress { set; get; }
         public string OriginatorFullName { set; get; }
         public string OriginatorVaan { set; get; }
+        
+        public NaturalPersonId[] OriginatorNaturalPersonIds { set; get; }
+        
+        public JuridicalPersonId[] OriginatorJuridicalPersonIds { set; get; }
+        
+        public string OriginatorBic { set; get; }
         public string BeneficiaryFullName { set; get; }
         public string BeneficiaryVaan { set; get; }
         public DateTime CreationDateTime { set; get; }
@@ -26,6 +32,8 @@ namespace OpenVASP.Host.Core.Models
         public string DestinationAddress { get; set; }
         public string TransactionHash { get; set; }
         public string SendingAddress { get; set; }
+        public string SessionDeclineCode { set; get; }
+        public string TransferDeclineCode { set; get; }
     }
 
     public enum TransactionStatus
@@ -33,6 +41,7 @@ namespace OpenVASP.Host.Core.Models
         Created,
         SessionRequested,
         SessionConfirmed,
+        SessionDeclined,
         TransferRequested,
         TransferForbidden,
         TransferAllowed,

@@ -54,6 +54,8 @@ namespace OpenVASP.Host.Controllers
         [HttpPost("create")]
         public async Task<IActionResult> CreateAsync([FromBody] CreateOutgoingTransactionRequestModel model)
         {
+            #region Validations
+            
             var originatorPlaceOfBirthCountry =
                 Country
                     .List
@@ -68,21 +70,59 @@ namespace OpenVASP.Host.Controllers
 
             if (model.Asset != "ETH" && model.Asset != "BTC")
             {
-                throw new InvalidOperationException("Asset not recognized.");
+                throw new ArgumentException("Asset not recognized.");
             }
 
             var asset = model.Asset == "ETH" ? VirtualAssetType.ETH : VirtualAssetType.BTC;
             
+            if (model.OriginatorPlaceOfBirth == null && model.OriginatorNaturalPersonIds == null &&
+                model.OriginatorJuridicalPersonIds == null && model.OriginatorBic == null)
+            {
+                throw new ArgumentException("Originator needs to be either a bank, a natural person or a juridical person.");
+            }
+
+            if ((model.OriginatorPlaceOfBirth != null || model.OriginatorNaturalPersonIds != null) &&
+                (model.OriginatorJuridicalPersonIds != null || model.OriginatorBic != null))
+            {
+                throw new ArgumentException("Originator can't be several types of entities at once.");
+            }
+            
+            if (model.OriginatorJuridicalPersonIds != null && ( model.OriginatorNaturalPersonIds != null ||
+                model.OriginatorPlaceOfBirth != null || model.OriginatorBic != null))
+            {
+                throw new ArgumentException("Originator can't be several types of entities at once.");
+            }
+            
+            if (model.OriginatorBic != null && ( model.OriginatorNaturalPersonIds != null ||
+                model.OriginatorPlaceOfBirth != null || model.OriginatorJuridicalPersonIds != null))
+            {
+                throw new ArgumentException("Originator can't be several types of entities at once.");
+            }
+
+            if (model.OriginatorJuridicalPersonIds != null && model.OriginatorJuridicalPersonIds.Any(
+                x => !Country.List.ContainsKey(x.CountryCode)))
+            {
+                throw new ArgumentException("Invalid country code for Juridical Person Id.");
+            }
+            
+            if (model.OriginatorNaturalPersonIds != null && model.OriginatorNaturalPersonIds.Any(
+                x => !Country.List.ContainsKey(x.CountryCode)))
+            {
+                throw new ArgumentException("Invalid country code for Natural Person Id.");
+            }
+            
+            #endregion Validations
+            
             var transaction = await _transactionsManager.CreateOutgoingTransactionAsync(
                 model.OriginatorFullName,
                 model.OriginatorVaan,
-                new Core.Models.PlaceOfBirth
+                new PlaceOfBirth
                 {
                     Country = originatorPlaceOfBirthCountry,
                     Date = model.OriginatorPlaceOfBirth.Date,
                     Town = model.OriginatorPlaceOfBirth.Town
                 },
-                new Core.Models.PostalAddress
+                new PostalAddress
                 {
                     Country = originatorPostalAddressCountry,
                     AddressLine = model.OriginatorPostalAddress.AddressLine,
@@ -94,7 +134,12 @@ namespace OpenVASP.Host.Controllers
                 model.BeneficiaryFullName,
                 model.BeneficiaryVaan,
                 asset,
-                model.Amount);
+                model.Amount,
+                model.OriginatorNaturalPersonIds?.Select(x => new NaturalPersonId(
+                    x.Id, x.Type, Country.List[x.CountryCode], x.NonStateIssuer)).ToArray(),
+                model.OriginatorJuridicalPersonIds?.Select(x => new JuridicalPersonId(
+                    x.Id, x.Type, Country.List[x.CountryCode], x.NonStateIssuer)).ToArray(),
+                model.OriginatorBic);
 
             return Ok(transaction);
         }
@@ -106,7 +151,7 @@ namespace OpenVASP.Host.Controllers
         /// <param name="sendingAddress">The (blockchain) sending address.</param>
         /// <param name="transactionHash">The (blockchain) transaction hash.</param>
         /// <returns>The updated transaction.</returns>
-        [HttpPut("{id}/dispatch")]
+        [HttpPut("{id}/transferDispatch")]
         public async Task<IActionResult> SendTransferDispatchAsync(
             [FromRoute] string id,
             [FromQuery] string sendingAddress,
