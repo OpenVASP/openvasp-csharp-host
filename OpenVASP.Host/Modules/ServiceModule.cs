@@ -61,22 +61,15 @@ namespace OpenVASP.Host.Modules
             {
                 throw new ArgumentException("Invalid configuration.");
             }
-            
-            var originator = VaspClient.Create(
-                vaspInfo,
-                vaspContractInfo,
-                _appSettings.HandshakePrivateKeyHex,
-                _appSettings.SignaturePrivateKeyHex,
-                _ethereumRpc,
-                _whisperRpc,
-                _fakeEnsProvider,
-                _signService,
-                _transportClient);
 
             builder.RegisterInstance(vaspInfo);
             builder.RegisterInstance(vaspContractInfo);
-            builder.RegisterInstance(originator);
             builder.RegisterInstance(_appSettings);
+            builder.RegisterInstance(_ethereumRpc);
+            builder.RegisterInstance(_whisperRpc);
+            builder.RegisterInstance(_fakeEnsProvider);
+            builder.RegisterInstance(_signService);
+            builder.RegisterInstance(_transportClient);
             
             builder.RegisterType<TransactionsManager>()
                 .SingleInstance()
