@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <PackageReference Include="bootstrap" Version="4.4.1" />
-    <PackageReference Include="OpenVASP.Client" Version="0.0.1-alpha.16" />
+    <PackageReference Include="OpenVASP.Client" Version="0.0.1-alpha.17" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="5.2.1" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="5.2.1" />
     <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="6.0.0" />
