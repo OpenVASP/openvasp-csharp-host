@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using OpenVASP.Host.Core.Models;
 using OpenVASP.CSharpClient;
+using OpenVASP.CSharpClient.Interfaces;
 using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;
 using PlaceOfBirth = OpenVASP.Host.Core.Models.PlaceOfBirth;
@@ -17,15 +18,37 @@ namespace OpenVASP.Host.Services
     {
         private readonly List<Transaction> _outgoingTransactions;
         private readonly List<Transaction> _incomingTransactions;
-        private readonly VaspSessionsManager _vaspSessionsManager;
-        private readonly VaspInformation _vaspInformation;
+        private readonly VaspClient _vaspClient;
+        private readonly VaspInformation _vaspInfo;
+        private readonly VaspContractInfo _vaspContractInfo;
 
-        public TransactionsManager(VaspClient vaspClient, VaspInformation vaspInformation)
+        public TransactionsManager(
+            VaspInformation vaspInfo,
+            VaspContractInfo vaspContractInfo,
+            AppSettings appSettings,
+            IEthereumRpc ethereumRpc,
+            IWhisperRpc whisperRpc,
+            WhisperSignService signService,
+            IEnsProvider ensProvider,
+            ITransportClient transportClient)
         {
-            _vaspInformation = vaspInformation;
             _outgoingTransactions = new List<Transaction>();
             _incomingTransactions = new List<Transaction>();
-            _vaspSessionsManager = new VaspSessionsManager(vaspClient, this);
+
+            _vaspInfo = vaspInfo;
+            _vaspContractInfo = vaspContractInfo;
+            
+            _vaspClient = VaspClient.Create(
+                vaspInfo,
+                vaspContractInfo,
+                appSettings.HandshakePrivateKeyHex,
+                appSettings.SignaturePrivateKeyHex,
+                ethereumRpc,
+                whisperRpc,
+                ensProvider,
+                signService,
+                transportClient,
+                this);
         }
 
         public async Task<Transaction> CreateOutgoingTransactionAsync(
@@ -62,7 +85,7 @@ namespace OpenVASP.Host.Services
                 OriginatorJuridicalPersonIds = juridicalPersonIds,
                 OriginatorBic = bic,
                 OriginatorNaturalPersonIds = naturalPersonIds,
-                SessionId = await _vaspSessionsManager.CreateSessionAsync(
+                SessionId = await _vaspClient.CreateSessionAsync(
                     new Originator(
                         originatorFullName,
                         sanitizedOriginatorVaan,
@@ -120,7 +143,7 @@ namespace OpenVASP.Host.Services
             if (transaction == null || transaction.Status != TransactionStatus.SessionRequested)
                 return; //todo: handle properly
 
-            await _vaspSessionsManager.SessionReplyAsync(transaction.SessionId, code);
+            await _vaspClient.SessionReplyAsync(transaction.SessionId, code);
 
             if (code == SessionReplyMessage.SessionReplyMessageCode.SessionAccepted)
             {
@@ -145,7 +168,7 @@ namespace OpenVASP.Host.Services
             {
                 transaction.Status = TransactionStatus.SessionConfirmed;
 
-                await _vaspSessionsManager.TransferRequestAsync(
+                await _vaspClient.TransferRequestAsync(
                     transaction.SessionId,
                     transaction.BeneficiaryFullName,
                     transaction.Asset,
@@ -186,7 +209,7 @@ namespace OpenVASP.Host.Services
             if (transaction == null || transaction.Status != TransactionStatus.TransferAllowed)
                 return; //todo: handle this case.
 
-            await _vaspSessionsManager.TransferDispatchAsync(
+            await _vaspClient.TransferDispatchAsync(
                 transaction.SessionId,
                 new TransferReply(
                     transaction.Asset,
@@ -220,7 +243,7 @@ namespace OpenVASP.Host.Services
             if (transaction == null || transaction.Status != TransactionStatus.TransferDispatched)
                 return; //todo: handle this case.
 
-            await _vaspSessionsManager.TransferConfirmAsync(transaction.SessionId, TransferConfirmationMessage.Create(
+            await _vaspClient.TransferConfirmAsync(transaction.SessionId, TransferConfirmationMessage.Create(
                 transaction.SessionId,
                 TransferConfirmationMessage.TransferConfirmationMessageCode.TransferConfirmed,
                 new Originator(
@@ -250,7 +273,7 @@ namespace OpenVASP.Host.Services
                     transaction.TransactionHash,
                     DateTime.UtcNow,
                     transaction.SendingAddress),
-                _vaspInformation));
+                _vaspInfo));
 
             transaction.Status = TransactionStatus.TransferConfirmed;
         }
@@ -262,7 +285,7 @@ namespace OpenVASP.Host.Services
             if (transaction == null || transaction.Status != TransactionStatus.TransferRequested)
                 return; //todo: handle this case.
 
-            await _vaspSessionsManager.TransferReplyAsync(
+            await _vaspClient.TransferReplyAsync(
                 transaction.SessionId,
                 TransferReplyMessage.Create(
                     transaction.SessionId,
@@ -290,7 +313,7 @@ namespace OpenVASP.Host.Services
                         TransferType.BlockchainTransfer,
                         transaction.Amount,
                         destinationAddress),
-                    _vaspInformation));
+                    _vaspInfo));
 
             if (code == TransferReplyMessage.TransferReplyMessageCode.TransferAccepted)
             {
