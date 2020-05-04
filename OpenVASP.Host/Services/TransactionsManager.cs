@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using OpenVASP.Host.Core.Models;
@@ -14,18 +14,24 @@ using Transaction = OpenVASP.Host.Core.Models.Transaction;
 
 namespace OpenVASP.Host.Services
 {
+    /// <summary>
+    /// Transactions manager
+    /// </summary>
     public class TransactionsManager : IVaspCallbacks
     {
         private readonly List<Transaction> _outgoingTransactions;
         private readonly List<Transaction> _incomingTransactions;
         private readonly VaspClient _vaspClient;
         private readonly VaspInformation _vaspInfo;
-        private readonly VaspContractInfo _vaspContractInfo;
 
+        /// <summary>
+        /// C-tor
+        /// </summary>
         public TransactionsManager(
             VaspInformation vaspInfo,
             VaspContractInfo vaspContractInfo,
-            AppSettings appSettings,
+            string handshakePrivateKeyHex,
+            string signaturePrivateKeyHex,
             IEthereumRpc ethereumRpc,
             IWhisperRpc whisperRpc,
             WhisperSignService signService,
@@ -36,15 +42,12 @@ namespace OpenVASP.Host.Services
             _incomingTransactions = new List<Transaction>();
 
             _vaspInfo = vaspInfo;
-            _vaspContractInfo = vaspContractInfo;
-            
             _vaspClient = VaspClient.Create(
                 vaspInfo,
-                vaspContractInfo,
-                appSettings.HandshakePrivateKeyHex,
-                appSettings.SignaturePrivateKeyHex,
+                vaspContractInfo.VaspCode,
+                handshakePrivateKeyHex,
+                signaturePrivateKeyHex,
                 ethereumRpc,
-                whisperRpc,
                 ensProvider,
                 signService,
                 transportClient,
@@ -120,7 +123,8 @@ namespace OpenVASP.Host.Services
             return transaction;
         }
 
-        public async Task SessionRequestMessageReceivedAsync(string sessionId, SessionRequestMessage message)
+        /// <inheritdoc cref="IVaspCallbacks"/>
+        public Task SessionRequestMessageReceivedAsync(string sessionId, SessionRequestMessage message)
         {
             var transaction = new Transaction
             {
@@ -134,6 +138,8 @@ namespace OpenVASP.Host.Services
             {
                 _incomingTransactions.Add(transaction);
             }
+
+            return Task.CompletedTask;
         }
 
         public async Task SendSessionReplyAsync(string id, SessionReplyMessage.SessionReplyMessageCode code)
@@ -156,6 +162,7 @@ namespace OpenVASP.Host.Services
             }
         }
 
+        /// <inheritdoc cref="IVaspCallbacks"/>
         public async Task SessionReplyMessageReceivedAsync(string sessionId, SessionReplyMessage message)
         {
             var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == sessionId);
@@ -183,12 +190,13 @@ namespace OpenVASP.Host.Services
             }
         }
 
-        public async Task TransferReplyMessageReceivedAsync(string sessionId, TransferReplyMessage message)
+        /// <inheritdoc cref="IVaspCallbacks"/>
+        public Task TransferReplyMessageReceivedAsync(string sessionId, TransferReplyMessage message)
         {
             var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == sessionId);
 
             if (transaction == null || transaction.Status != TransactionStatus.TransferRequested)
-                return; //todo: handle this case.
+                return Task.CompletedTask; //todo: handle this case.
 
             if (message.Message.MessageCode == TransferReplyMessage.GetMessageCode(TransferReplyMessage.TransferReplyMessageCode.TransferAccepted))
             {
@@ -200,6 +208,8 @@ namespace OpenVASP.Host.Services
                 transaction.Status = TransactionStatus.TransferForbidden;
                 transaction.TransferDeclineCode = message.Message.MessageCode;
             }
+
+            return Task.CompletedTask;
         }
 
         public async Task SendTransferDispatchAsync(string id, string sendingAddress, string transactionHash)
@@ -225,15 +235,19 @@ namespace OpenVASP.Host.Services
             transaction.Status = TransactionStatus.TransferDispatched;
         }
 
-        public async Task TransferConfirmationMessageReceivedAsync(string sessionId,
+        /// <inheritdoc cref="IVaspCallbacks"/>
+        public Task TransferConfirmationMessageReceivedAsync(
+            string sessionId,
             TransferConfirmationMessage message)
         {
             var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == sessionId);
 
             if (transaction == null || transaction.Status != TransactionStatus.TransferDispatched)
-                return; //todo: handle this case.
+                return Task.CompletedTask; //todo: handle this case.
 
             transaction.Status = TransactionStatus.TransferConfirmed;
+
+            return Task.CompletedTask;
         }
 
         public async Task SendTransferConfirmAsync(string id)
@@ -327,6 +341,7 @@ namespace OpenVASP.Host.Services
             }
         }
 
+        /// <inheritdoc cref="IVaspCallbacks"/>
         public Task TransferRequestMessageReceivedAsync(string sessionId, TransferRequestMessage message)
         {
             var transaction = _incomingTransactions.Single(x => x.SessionId == sessionId);
@@ -367,26 +382,29 @@ namespace OpenVASP.Host.Services
             return Task.CompletedTask;
         }
 
-        public async Task TransferDispatchMessageReceivedAsync(string sessionId, TransferDispatchMessage message)
+        /// <inheritdoc cref="IVaspCallbacks"/>
+        public Task TransferDispatchMessageReceivedAsync(string sessionId, TransferDispatchMessage message)
         {
             var transaction = _incomingTransactions.SingleOrDefault(x => x.SessionId == sessionId);
 
             if (transaction == null || transaction.Status != TransactionStatus.TransferAllowed)
-                return; //todo: handle this case.
+                return Task.CompletedTask; //todo: handle this case.
 
             transaction.TransactionHash = message.Transaction.TransactionId;
             transaction.SendingAddress = message.Transaction.SendingAddress;
             transaction.Status = TransactionStatus.TransferDispatched;
+
+            return Task.CompletedTask;
         }
 
-        public async Task<IReadOnlyList<Transaction>> GetOutgoingTransactionsAsync()
+        public Task<ReadOnlyCollection<Transaction>> GetOutgoingTransactionsAsync()
         {
-            return _outgoingTransactions;
+            return Task.FromResult(_outgoingTransactions.AsReadOnly());
         }
 
-        public async Task<IReadOnlyList<Transaction>> GetIncomingTransactionsAsync()
+        public Task<ReadOnlyCollection<Transaction>> GetIncomingTransactionsAsync()
         {
-            return _incomingTransactions;
+            return Task.FromResult(_incomingTransactions.AsReadOnly());
         }
     }
 }
