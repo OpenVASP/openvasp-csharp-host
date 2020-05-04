@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using OpenVASP.Host.Core.Models;
+using OpenVASP.Host.Core.Services;
 using OpenVASP.Host.Models.Response;
-using OpenVASP.Host.Services;
 using OpenVASP.Messaging.Messages.Entities;
 using Transaction = OpenVASP.Host.Core.Models.Transaction;
 
@@ -13,9 +13,9 @@ namespace OpenVASP.Host.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly TransactionsManager _transactionsManager;
+        private readonly ITransactionsManager _transactionsManager;
 
-        public HomeController(TransactionsManager transactionsManager)
+        public HomeController(ITransactionsManager transactionsManager)
         {
             _transactionsManager = transactionsManager;
         }

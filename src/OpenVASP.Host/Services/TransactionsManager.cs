@@ -9,19 +9,20 @@ using OpenVASP.CSharpClient.Interfaces;
 using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;
 using Transaction = OpenVASP.Host.Core.Models.Transaction;
+using OpenVASP.Host.Core.Services;
 
 namespace OpenVASP.Host.Services
 {
     /// <summary>
     /// Transactions manager
     /// </summary>
-    public class TransactionsManager : IVaspCallbacks
+    public class TransactionsManager : IVaspCallbacks, ITransactionsManager
     {
         private readonly List<Transaction> _outgoingTransactions;
         private readonly List<Transaction> _incomingTransactions;
         private readonly VaspClient _vaspClient;
         private readonly VaspInformation _vaspInfo;
-        private readonly TransactionDataProcessor _transactionDataProcessor;
+        private readonly ITransactionDataService _transactionDataService;
 
         /// <summary>
         /// C-tor
@@ -36,7 +37,7 @@ namespace OpenVASP.Host.Services
             WhisperSignService signService,
             IEnsProvider ensProvider,
             ITransportClient transportClient,
-            TransactionDataProcessor transactionDataProcessor)
+            ITransactionDataService transactionDataService)
         {
             _outgoingTransactions = new List<Transaction>();
             _incomingTransactions = new List<Transaction>();
@@ -53,7 +54,7 @@ namespace OpenVASP.Host.Services
                 transportClient,
                 this);
 
-            _transactionDataProcessor = transactionDataProcessor;
+            _transactionDataService = transactionDataService;
         }
 
         public async Task<Transaction> RegisterOutgoingTransactionAsync(
@@ -161,7 +162,10 @@ namespace OpenVASP.Host.Services
             return Task.CompletedTask;
         }
 
-        public async Task SendTransferDispatchAsync(string id, string sendingAddress, string transactionHash)
+        public async Task SendTransferDispatchAsync(
+            string id,
+            string sendingAddress,
+            string transactionHash)
         {
             var transaction = _outgoingTransactions.SingleOrDefault(x => x.Id == id);
 
@@ -209,8 +213,8 @@ namespace OpenVASP.Host.Services
             await _vaspClient.TransferConfirmAsync(transaction.SessionId, TransferConfirmationMessage.Create(
                 transaction.SessionId,
                 TransferConfirmationMessage.TransferConfirmationMessageCode.TransferConfirmed,
-                _transactionDataProcessor.GetOriginatorFromTx(transaction),
-                _transactionDataProcessor.GetBeneficiaryFromTx(transaction),
+                _transactionDataService.GetOriginatorFromTx(transaction),
+                _transactionDataService.GetBeneficiaryFromTx(transaction),
                 new TransferReply(
                     transaction.Asset,
                     TransferType.BlockchainTransfer,
@@ -225,7 +229,10 @@ namespace OpenVASP.Host.Services
             transaction.Status = TransactionStatus.TransferConfirmed;
         }
 
-        public async Task SendTransferReplyAsync(string id, string destinationAddress, TransferReplyMessage.TransferReplyMessageCode code)
+        public async Task SendTransferReplyAsync(
+            string id,
+            string destinationAddress,
+            TransferReplyMessage.TransferReplyMessageCode code)
         {
             var transaction = _incomingTransactions.SingleOrDefault(x => x.Id == id);
 
@@ -237,8 +244,8 @@ namespace OpenVASP.Host.Services
                 TransferReplyMessage.Create(
                     transaction.SessionId,
                     code,
-                    _transactionDataProcessor.GetOriginatorFromTx(transaction),
-                    _transactionDataProcessor.GetBeneficiaryFromTx(transaction),
+                    _transactionDataService.GetOriginatorFromTx(transaction),
+                    _transactionDataService.GetBeneficiaryFromTx(transaction),
                     new TransferReply(
                         transaction.Asset,
                         TransferType.BlockchainTransfer,
@@ -264,7 +271,7 @@ namespace OpenVASP.Host.Services
             var transaction = _incomingTransactions.Single(x => x.SessionId == sessionId);
 
             transaction.Status = TransactionStatus.TransferRequested;
-            _transactionDataProcessor.FillTransactionData(transaction, message);
+            _transactionDataService.FillTransactionData(transaction, message);
 
             return Task.CompletedTask;
         }

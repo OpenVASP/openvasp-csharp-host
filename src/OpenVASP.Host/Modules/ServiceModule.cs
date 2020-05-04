@@ -2,6 +2,7 @@ using System;
 using Autofac;
 using Nethereum.Web3;
 using OpenVASP.CSharpClient;
+using OpenVASP.Host.Core.Services;
 using OpenVASP.Host.Services;
 using OpenVASP.Messaging;
 using OpenVASP.Messaging.Messages.Entities;
@@ -65,12 +66,13 @@ namespace OpenVASP.Host.Modules
             builder.RegisterInstance(signService);
             builder.RegisterInstance(transportClient);
 
-            builder.RegisterType<TransactionDataProcessor>()
+            builder.RegisterType<TransactionDataService>()
+                .As<ITransactionDataService>()
                 .SingleInstance();
 
             builder.RegisterType<TransactionsManager>()
                 .SingleInstance()
-                .AsSelf()
+                .As<ITransactionsManager>()
                 .AutoActivate()
                 .WithParameter("handshakePrivateKeyHex", _appSettings.HandshakePrivateKeyHex)
                 .WithParameter("signaturePrivateKeyHex", _appSettings.SignaturePrivateKeyHex);
