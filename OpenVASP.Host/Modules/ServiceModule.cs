@@ -2,21 +2,15 @@ using System;
 using Autofac;
 using Nethereum.Web3;
 using OpenVASP.CSharpClient;
-using OpenVASP.CSharpClient.Interfaces;
 using OpenVASP.Host.Services;
 using OpenVASP.Messaging;
 using OpenVASP.Messaging.Messages.Entities;
 
 namespace OpenVASP.Host.Modules
 {
-    public class ServiceModule : Module
+    internal class ServiceModule : Module
     {
         private AppSettings _appSettings;
-        private IEnsProvider _fakeEnsProvider;
-        private WhisperSignService _signService;
-        private IEthereumRpc _ethereumRpc;
-        private IWhisperRpc _whisperRpc;
-        private ITransportClient _transportClient;
 
         public ServiceModule(AppSettings appSettings)
         {
@@ -25,13 +19,13 @@ namespace OpenVASP.Host.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
-            _fakeEnsProvider = new FakeEnsProvider();
-            _signService = new WhisperSignService();
-            _whisperRpc = new WhisperRpc(new Web3(_appSettings.WhisperRpcUri), new WhisperMessageFormatter());
-            _ethereumRpc = new EthereumRpc(new Web3(_appSettings.EthereumRpcUri));
-            _transportClient = new TransportClient(_whisperRpc, _signService, new WhisperMessageFormatter());
+            var fakeEnsProvider = new FakeEnsProvider();
+            var signService = new WhisperSignService();
+            var whisperRpc = new WhisperRpc(new Web3(_appSettings.WhisperRpcUri), new WhisperMessageFormatter());
+            var ethereumRpc = new EthereumRpc(new Web3(_appSettings.EthereumRpcUri));
+            var transportClient = new WhisperTransportClient(whisperRpc, signService, new WhisperMessageFormatter());
 
-            var vaspInformationBuilder = new VaspInformationBuilder(_ethereumRpc);
+            var vaspInformationBuilder = new VaspInformationBuilder(ethereumRpc);
 
             VaspInformation vaspInfo;
             VaspContractInfo vaspContractInfo;
@@ -65,17 +59,19 @@ namespace OpenVASP.Host.Modules
             builder.RegisterInstance(vaspInfo);
             builder.RegisterInstance(vaspContractInfo);
             builder.RegisterInstance(_appSettings);
-            builder.RegisterInstance(_ethereumRpc);
-            builder.RegisterInstance(_whisperRpc);
-            builder.RegisterInstance(_fakeEnsProvider);
-            builder.RegisterInstance(_signService);
-            builder.RegisterInstance(_transportClient);
+            builder.RegisterInstance(ethereumRpc);
+            builder.RegisterInstance(whisperRpc);
+            builder.RegisterInstance(fakeEnsProvider);
+            builder.RegisterInstance(signService);
+            builder.RegisterInstance(transportClient);
             
             builder.RegisterType<TransactionsManager>()
                 .SingleInstance()
                 .AsSelf()
-                .AutoActivate();
-            
+                .AutoActivate()
+                .WithParameter("handshakePrivateKeyHex", _appSettings.HandshakePrivateKeyHex)
+                .WithParameter("signaturePrivateKeyHex", _appSettings.SignaturePrivateKeyHex);
+
             base.Load(builder);
         }
     }

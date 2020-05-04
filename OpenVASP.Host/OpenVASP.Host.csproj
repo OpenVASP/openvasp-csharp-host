@@ -16,12 +16,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="bootstrap" Version="4.4.1" />
-    <PackageReference Include="OpenVASP.Client" Version="0.0.1-alpha.17" />
+    <PackageReference Include="OpenVASP.Client" Version="0.0.2-alpha.1" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="5.2.1" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="5.2.1" />
     <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="6.0.0" />
