@@ -8,8 +8,6 @@ using OpenVASP.CSharpClient;
 using OpenVASP.CSharpClient.Interfaces;
 using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;
-using PlaceOfBirth = OpenVASP.Host.Core.Models.PlaceOfBirth;
-using PostalAddress = OpenVASP.Host.Core.Models.PostalAddress;
 using Transaction = OpenVASP.Host.Core.Models.Transaction;
 
 namespace OpenVASP.Host.Services
@@ -23,6 +21,7 @@ namespace OpenVASP.Host.Services
         private readonly List<Transaction> _incomingTransactions;
         private readonly VaspClient _vaspClient;
         private readonly VaspInformation _vaspInfo;
+        private readonly TransactionDataProcessor _transactionDataProcessor;
 
         /// <summary>
         /// C-tor
@@ -36,7 +35,8 @@ namespace OpenVASP.Host.Services
             IWhisperRpc whisperRpc,
             WhisperSignService signService,
             IEnsProvider ensProvider,
-            ITransportClient transportClient)
+            ITransportClient transportClient,
+            TransactionDataProcessor transactionDataProcessor)
         {
             _outgoingTransactions = new List<Transaction>();
             _incomingTransactions = new List<Transaction>();
@@ -52,68 +52,17 @@ namespace OpenVASP.Host.Services
                 signService,
                 transportClient,
                 this);
+
+            _transactionDataProcessor = transactionDataProcessor;
         }
 
-        public async Task<Transaction> CreateOutgoingTransactionAsync(
-            string originatorFullName,
-            string originatorVaan,
-            PlaceOfBirth originatorPlaceOfBirth,
-            PostalAddress originatorPostalAddress,
-            string beneficiaryFullName,
-            string beneficiaryVaan,
-            VirtualAssetType asset,
-            decimal amount,
-            NaturalPersonId[] naturalPersonIds,
-            JuridicalPersonId[] juridicalPersonIds,
-            string bic)
+        public async Task<Transaction> RegisterOutgoingTransactionAsync(
+            Transaction transaction,
+            Originator originator,
+            VirtualAssetsAccountNumber virtualAssetsAccountNumber)
         {
-            var sanitizedBeneficiaryVaan = beneficiaryVaan.Replace(" ", "");
-            var sanitizedOriginatorVaan = originatorVaan.Replace(" ", "");
-            var beneficiaryVaspCode = sanitizedBeneficiaryVaan.Substring(0, 8);
-            var beneficiaryCustomerSpecificNumber = sanitizedBeneficiaryVaan.Substring(8, 14);
-
-            var transaction = new Transaction
-            {
-                Status = TransactionStatus.Created,
-                OriginatorPostalAddress = originatorPostalAddress,
-                OriginatorPlaceOfBirth = originatorPlaceOfBirth,
-                Amount = amount,
-                Asset = asset,
-                Id = Guid.NewGuid().ToString(),
-                CreationDateTime = DateTime.UtcNow,
-                BeneficiaryVaan = sanitizedBeneficiaryVaan,
-                OriginatorVaan = sanitizedOriginatorVaan,
-                OriginatorFullName = originatorFullName,
-                BeneficiaryFullName = beneficiaryFullName,
-                OriginatorJuridicalPersonIds = juridicalPersonIds,
-                OriginatorBic = bic,
-                OriginatorNaturalPersonIds = naturalPersonIds,
-                SessionId = await _vaspClient.CreateSessionAsync(
-                    new Originator(
-                        originatorFullName,
-                        sanitizedOriginatorVaan,
-                        new OpenVASP.Messaging.Messages.Entities.PostalAddress
-                        (
-                            originatorPostalAddress.Street,
-                            originatorPostalAddress.Building,
-                            originatorPostalAddress.AddressLine,
-                            originatorPostalAddress.PostCode,
-                            originatorPostalAddress.Town,
-                            originatorPostalAddress.Country
-                        ),
-                        new OpenVASP.Messaging.Messages.Entities.PlaceOfBirth
-                        (
-                            originatorPlaceOfBirth.Date,
-                            originatorPlaceOfBirth.Town,
-                            originatorPlaceOfBirth.Country
-                        ),
-                        naturalPersonIds,
-                        juridicalPersonIds,
-                        bic),
-                    VirtualAssetsAccountNumber.Create(beneficiaryVaspCode, beneficiaryCustomerSpecificNumber))
-            };
-
             transaction.Status = TransactionStatus.SessionRequested;
+            transaction.SessionId = await _vaspClient.CreateSessionAsync(originator, virtualAssetsAccountNumber);
 
             lock (_outgoingTransactions)
             {
@@ -260,30 +209,14 @@ namespace OpenVASP.Host.Services
             await _vaspClient.TransferConfirmAsync(transaction.SessionId, TransferConfirmationMessage.Create(
                 transaction.SessionId,
                 TransferConfirmationMessage.TransferConfirmationMessageCode.TransferConfirmed,
-                new Originator(
-                    transaction.OriginatorFullName,
-                    transaction.OriginatorVaan,
-                    new OpenVASP.Messaging.Messages.Entities.PostalAddress(
-                        transaction.OriginatorPostalAddress.Street,
-                        transaction.OriginatorPostalAddress.Building,
-                        transaction.OriginatorPostalAddress.AddressLine,
-                        transaction.OriginatorPostalAddress.PostCode,
-                        transaction.OriginatorPostalAddress.Town,
-                        transaction.OriginatorPostalAddress.Country),
-                    new OpenVASP.Messaging.Messages.Entities.PlaceOfBirth(
-                        transaction.OriginatorPlaceOfBirth.Date,
-                        transaction.OriginatorPlaceOfBirth.Town,
-                        transaction.OriginatorPlaceOfBirth.Country),
-                    transaction.OriginatorNaturalPersonIds,
-                    transaction.OriginatorJuridicalPersonIds,
-                    transaction.OriginatorBic),
-                new Beneficiary(transaction.BeneficiaryFullName, transaction.BeneficiaryVaan),
+                _transactionDataProcessor.GetOriginatorFromTx(transaction),
+                _transactionDataProcessor.GetBeneficiaryFromTx(transaction),
                 new TransferReply(
                     transaction.Asset,
                     TransferType.BlockchainTransfer,
                     transaction.Amount,
                     transaction.DestinationAddress),
-                new OpenVASP.Messaging.Messages.Entities.Transaction(
+                new Messaging.Messages.Entities.Transaction(
                     transaction.TransactionHash,
                     DateTime.UtcNow,
                     transaction.SendingAddress),
@@ -304,24 +237,8 @@ namespace OpenVASP.Host.Services
                 TransferReplyMessage.Create(
                     transaction.SessionId,
                     code,
-                    new Originator(
-                        transaction.OriginatorFullName,
-                        transaction.OriginatorVaan,
-                        new OpenVASP.Messaging.Messages.Entities.PostalAddress(
-                            transaction.OriginatorPostalAddress.Street,
-                            transaction.OriginatorPostalAddress.Building,
-                            transaction.OriginatorPostalAddress.AddressLine,
-                            transaction.OriginatorPostalAddress.PostCode,
-                            transaction.OriginatorPostalAddress.Town,
-                            transaction.OriginatorPostalAddress.Country),
-                        new OpenVASP.Messaging.Messages.Entities.PlaceOfBirth(
-                            transaction.OriginatorPlaceOfBirth.Date,
-                            transaction.OriginatorPlaceOfBirth.Town,
-                            transaction.OriginatorPlaceOfBirth.Country),
-                        transaction.OriginatorNaturalPersonIds,
-                        transaction.OriginatorJuridicalPersonIds,
-                        transaction.OriginatorBic),
-                    new Beneficiary(transaction.BeneficiaryFullName, transaction.BeneficiaryVaan),
+                    _transactionDataProcessor.GetOriginatorFromTx(transaction),
+                    _transactionDataProcessor.GetBeneficiaryFromTx(transaction),
                     new TransferReply(
                         transaction.Asset,
                         TransferType.BlockchainTransfer,
@@ -346,38 +263,8 @@ namespace OpenVASP.Host.Services
         {
             var transaction = _incomingTransactions.Single(x => x.SessionId == sessionId);
 
-
             transaction.Status = TransactionStatus.TransferRequested;
-            transaction.OriginatorPostalAddress = new PostalAddress
-            {
-                Street = message.Originator.PostalAddress.StreetName,
-                AddressLine = message.Originator.PostalAddress.AddressLine,
-                Building = int.Parse(message.Originator.PostalAddress.BuildingNumber),
-                Country = message.Originator.PostalAddress.Country,
-                PostCode = message.Originator.PostalAddress.PostCode,
-                Town = message.Originator.PostalAddress.TownName
-            };
-            transaction.OriginatorPlaceOfBirth = new PlaceOfBirth
-            {
-                Country = message.Originator.PlaceOfBirth.CountryOfBirth,
-                Date = message.Originator.PlaceOfBirth.DateOfBirth,
-                Town = message.Originator.PlaceOfBirth.CityOfBirth
-            };
-            transaction.OriginatorJuridicalPersonIds = message.Originator.JuridicalPersonId?.Select(
-                    x => new JuridicalPersonId(x.Identifier, x.IdentificationType, x.IssuingCountry,
-                        x.NonStateIssuer))
-                .ToArray();
-            transaction.OriginatorNaturalPersonIds = message.Originator.NaturalPersonId?.Select(
-                    x => new NaturalPersonId(x.Identifier, x.IdentificationType, x.IssuingCountry,
-                        x.NonStateIssuer))
-                .ToArray();
-            transaction.OriginatorBic = message.Originator.BIC;
-            transaction.Amount = message.Transfer.Amount;
-            transaction.Asset = message.Transfer.VirtualAssetType;
-            transaction.BeneficiaryVaan = message.Beneficiary.VAAN.Replace(" ", "");
-            transaction.OriginatorVaan = message.Originator.VAAN.Replace(" ", "");
-            transaction.OriginatorFullName = message.Originator.Name;
-            transaction.BeneficiaryFullName = message.Beneficiary.Name;
+            _transactionDataProcessor.FillTransactionData(transaction, message);
 
             return Task.CompletedTask;
         }

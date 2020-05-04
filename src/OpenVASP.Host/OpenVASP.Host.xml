@@ -1,0 +1,198 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>OpenVASP.Host</name>
+    </assembly>
+    <members>
+        <member name="M:OpenVASP.Host.Controllers.IncomingTransactionsController.GetIncomingTransactionsAsync">
+            <summary>
+            Get all incoming transactions for the given host.
+            </summary>
+            <returns>A list of incoming transactions.</returns>
+        </member>
+        <member name="M:OpenVASP.Host.Controllers.IncomingTransactionsController.GetIncomingTransactionAsync(System.String)">
+            <summary>
+            Get a specific incoming transaction for the given host.
+            </summary>
+            <param name="id">The Id of the transaction.</param>
+            <returns>A requested transaction.</returns>
+        </member>
+        <member name="M:OpenVASP.Host.Controllers.IncomingTransactionsController.SendSessionReplyAsync(System.String,OpenVASP.Messaging.Messages.SessionReplyMessage.SessionReplyMessageCode)">
+            <summary>
+            Send a TransferReply message for the given transaction.
+            </summary>
+            <param name="id">The Id of the transaction.</param>
+            <param name="code">Session reply message code.</param>
+            <returns>The updated transaction.</returns>
+        </member>
+        <member name="M:OpenVASP.Host.Controllers.IncomingTransactionsController.SendTransferReplyAsync(System.String,OpenVASP.Messaging.Messages.TransferReplyMessage.TransferReplyMessageCode,System.String)">
+            <summary>
+            Send a TransferReply message for the given transaction.
+            </summary>
+            <param name="id">The Id of the transaction.</param>
+            <param name="code">Transfer reply message code.</param>
+            <param name="destinationAddress">The (blockchain) destination address of the beneficiary.</param>
+            <returns>The updated transaction.</returns>
+        </member>
+        <member name="M:OpenVASP.Host.Controllers.IncomingTransactionsController.SendTransferConfirmAsync(System.String)">
+            <summary>
+            Send a TransferConfirm message for the given transaction.
+            </summary>
+            <param name="id">The Id of the transaction.</param>
+            <returns>The updated transaction.</returns>
+        </member>
+        <member name="M:OpenVASP.Host.Controllers.OutgoingTransactionsController.GetOutgoingTransactionsAsync">
+            <summary>
+            Get all outgoing transactions for the given host.
+            </summary>
+            <returns>A list of outgoing transactions.</returns>
+        </member>
+        <member name="M:OpenVASP.Host.Controllers.OutgoingTransactionsController.GetOutgoingTransactionAsync(System.String)">
+            <summary>
+            Get a specific outgoing transaction for the given host.
+            </summary>
+            <param name="id">The Id of the transaction.</param>
+            <returns>A requested transaction.</returns>
+        </member>
+        <member name="M:OpenVASP.Host.Controllers.OutgoingTransactionsController.CreateAsync(OpenVASP.Host.Models.Request.CreateOutgoingTransactionRequestModel)">
+            <summary>
+            Create a transaction (send SessionRequest) and make a transfer request (send TransferRequest).
+            </summary>
+            <param name="model">The details for the to-be-created transaction.</param>
+            <returns>The created transaction.</returns>
+            <exception cref="T:System.InvalidOperationException">In case an invalid Asset was provided.</exception>
+        </member>
+        <member name="M:OpenVASP.Host.Controllers.OutgoingTransactionsController.SendTransferDispatchAsync(System.String,System.String,System.String)">
+            <summary>
+            Send a TransferDispatch message for the given transaction.
+            </summary>
+            <param name="id">The Id of the transaction.</param>
+            <param name="sendingAddress">The (blockchain) sending address.</param>
+            <param name="transactionHash">The (blockchain) transaction hash.</param>
+            <returns>The updated transaction.</returns>
+        </member>
+        <member name="T:OpenVASP.Host.Models.PlaceOfBirthModel">
+            <summary>
+            Represents place of birth of the originator.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.PlaceOfBirthModel.Town">
+            <summary>
+            Town.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.PlaceOfBirthModel.Country">
+            <summary>
+            Country
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.PlaceOfBirthModel.Date">
+            <summary>
+            Date of birth.
+            </summary>
+        </member>
+        <member name="T:OpenVASP.Host.Models.PostalAddressModel">
+            <summary>
+            Represents postal address of the originator.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.PostalAddressModel.Street">
+            <summary>
+            Street.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.PostalAddressModel.Building">
+            <summary>
+            Building number.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.PostalAddressModel.AddressLine">
+            <summary>
+            Address line.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.PostalAddressModel.PostCode">
+            <summary>
+            Post code.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.PostalAddressModel.Town">
+            <summary>
+            Town.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.PostalAddressModel.Country">
+            <summary>
+            Country.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.Request.CreateOutgoingTransactionRequestModel.BeneficiaryFullName">
+            <summary>
+            Beneficiary full name.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.Request.CreateOutgoingTransactionRequestModel.BeneficiaryVaan">
+            <summary>
+            Beneficiary VAAN code.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.Request.CreateOutgoingTransactionRequestModel.OriginatorFullName">
+            <summary>
+            Originator full name.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.Request.CreateOutgoingTransactionRequestModel.OriginatorVaan">
+            <summary>
+            Originator VAAN code.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.Request.CreateOutgoingTransactionRequestModel.OriginatorPostalAddress">
+            <summary>
+            Originator postal address.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.Request.CreateOutgoingTransactionRequestModel.OriginatorPlaceOfBirth">
+            <summary>
+            Originator place of birth.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.Request.CreateOutgoingTransactionRequestModel.Asset">
+            <summary>
+            The asset of the transaction.
+            </summary>
+        </member>
+        <member name="P:OpenVASP.Host.Models.Request.CreateOutgoingTransactionRequestModel.Amount">
+            <summary>
+            The amount to transfer.
+            </summary>
+        </member>
+        <member name="T:OpenVASP.Host.Services.TransactionsManager">
+            <summary>
+            Transactions manager
+            </summary>
+        </member>
+        <member name="M:OpenVASP.Host.Services.TransactionsManager.#ctor(OpenVASP.Messaging.Messages.Entities.VaspInformation,OpenVASP.CSharpClient.VaspContractInfo,System.String,System.String,OpenVASP.CSharpClient.Interfaces.IEthereumRpc,OpenVASP.CSharpClient.Interfaces.IWhisperRpc,OpenVASP.CSharpClient.WhisperSignService,OpenVASP.CSharpClient.Interfaces.IEnsProvider,OpenVASP.CSharpClient.Interfaces.ITransportClient,OpenVASP.Host.Services.TransactionDataProcessor)">
+            <summary>
+            C-tor
+            </summary>
+        </member>
+        <member name="M:OpenVASP.Host.Services.TransactionsManager.SessionRequestMessageReceivedAsync(System.String,OpenVASP.Messaging.Messages.SessionRequestMessage)">
+            <inheritdoc cref="T:OpenVASP.CSharpClient.IVaspCallbacks"/>
+        </member>
+        <member name="M:OpenVASP.Host.Services.TransactionsManager.SessionReplyMessageReceivedAsync(System.String,OpenVASP.Messaging.Messages.SessionReplyMessage)">
+            <inheritdoc cref="T:OpenVASP.CSharpClient.IVaspCallbacks"/>
+        </member>
+        <member name="M:OpenVASP.Host.Services.TransactionsManager.TransferReplyMessageReceivedAsync(System.String,OpenVASP.Messaging.Messages.TransferReplyMessage)">
+            <inheritdoc cref="T:OpenVASP.CSharpClient.IVaspCallbacks"/>
+        </member>
+        <member name="M:OpenVASP.Host.Services.TransactionsManager.TransferConfirmationMessageReceivedAsync(System.String,OpenVASP.Messaging.Messages.TransferConfirmationMessage)">
+            <inheritdoc cref="T:OpenVASP.CSharpClient.IVaspCallbacks"/>
+        </member>
+        <member name="M:OpenVASP.Host.Services.TransactionsManager.TransferRequestMessageReceivedAsync(System.String,OpenVASP.Messaging.Messages.TransferRequestMessage)">
+            <inheritdoc cref="T:OpenVASP.CSharpClient.IVaspCallbacks"/>
+        </member>
+        <member name="M:OpenVASP.Host.Services.TransactionsManager.TransferDispatchMessageReceivedAsync(System.String,OpenVASP.Messaging.Messages.TransferDispatchMessage)">
+            <inheritdoc cref="T:OpenVASP.CSharpClient.IVaspCallbacks"/>
+        </member>
+    </members>
+</doc>

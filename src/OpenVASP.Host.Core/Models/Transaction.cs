@@ -9,7 +9,7 @@ namespace OpenVASP.Host.Core.Models
     {
         public string Id { set; get; }
         public string SessionId { set; get; }
-        
+
         [JsonConverter(typeof(StringEnumConverter))]
         public VirtualAssetType Asset { set; get; }
         public decimal Amount { set; get; }
@@ -17,11 +17,11 @@ namespace OpenVASP.Host.Core.Models
         public PostalAddress OriginatorPostalAddress { set; get; }
         public string OriginatorFullName { set; get; }
         public string OriginatorVaan { set; get; }
-        
+
         public NaturalPersonId[] OriginatorNaturalPersonIds { set; get; }
-        
+
         public JuridicalPersonId[] OriginatorJuridicalPersonIds { set; get; }
-        
+
         public string OriginatorBic { set; get; }
         public string BeneficiaryFullName { set; get; }
         public string BeneficiaryVaan { set; get; }
@@ -34,18 +34,5 @@ namespace OpenVASP.Host.Core.Models
         public string SendingAddress { get; set; }
         public string SessionDeclineCode { set; get; }
         public string TransferDeclineCode { set; get; }
-    }
-
-    public enum TransactionStatus
-    {
-        Created,
-        SessionRequested,
-        SessionConfirmed,
-        SessionDeclined,
-        TransferRequested,
-        TransferForbidden,
-        TransferAllowed,
-        TransferDispatched,
-        TransferConfirmed
     }
 }
