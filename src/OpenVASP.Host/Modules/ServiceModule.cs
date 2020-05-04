@@ -64,7 +64,10 @@ namespace OpenVASP.Host.Modules
             builder.RegisterInstance(fakeEnsProvider);
             builder.RegisterInstance(signService);
             builder.RegisterInstance(transportClient);
-            
+
+            builder.RegisterType<TransactionDataProcessor>()
+                .SingleInstance();
+
             builder.RegisterType<TransactionsManager>()
                 .SingleInstance()
                 .AsSelf()
