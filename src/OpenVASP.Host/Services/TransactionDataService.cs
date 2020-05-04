@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using OpenVASP.Host.Core.Models;
+using OpenVASP.Host.Core.Services;
 using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;
 using PlaceOfBirth = OpenVASP.Host.Core.Models.PlaceOfBirth;
@@ -9,7 +10,7 @@ using Transaction = OpenVASP.Host.Core.Models.Transaction;
 
 namespace OpenVASP.Host.Services
 {
-    public class TransactionDataProcessor
+    public class TransactionDataService : ITransactionDataService
     {
         public (Transaction, Originator) GenerateTransactionData(
             string originatorFullName,

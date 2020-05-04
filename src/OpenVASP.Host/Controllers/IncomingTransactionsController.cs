@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using OpenVASP.Host.Services;
+using OpenVASP.Host.Core.Services;
 using OpenVASP.Messaging.Messages;
 
 namespace OpenVASP.Host.Controllers
@@ -9,9 +9,9 @@ namespace OpenVASP.Host.Controllers
     [Route("api/incomingTransactions")]
     public class IncomingTransactionsController : Controller
     {
-        private readonly TransactionsManager _transactionsManager;
+        private readonly ITransactionsManager _transactionsManager;
 
-        public IncomingTransactionsController(TransactionsManager transactionsManager)
+        public IncomingTransactionsController(ITransactionsManager transactionsManager)
         {
             _transactionsManager = transactionsManager;
         }

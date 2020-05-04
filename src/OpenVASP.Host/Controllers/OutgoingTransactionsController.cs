@@ -3,8 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using OpenVASP.Messaging.Messages.Entities;
+using OpenVASP.Host.Core.Services;
 using OpenVASP.Host.Models.Request;
-using OpenVASP.Host.Services;
 using PlaceOfBirth = OpenVASP.Host.Core.Models.PlaceOfBirth;
 using PostalAddress = OpenVASP.Host.Core.Models.PostalAddress;
 
@@ -13,14 +13,14 @@ namespace OpenVASP.Host.Controllers
     [Route("api/outgoingTransactions")]
     public class OutgoingTransactionsController : Controller
     {
-        private readonly TransactionDataProcessor _transactionDataGenerator;
-        private readonly TransactionsManager _transactionsManager;
+        private readonly ITransactionDataService _transactionDataService;
+        private readonly ITransactionsManager _transactionsManager;
 
         public OutgoingTransactionsController(
-            TransactionDataProcessor transactionDataGenerator,
-            TransactionsManager transactionsManager)
+            ITransactionDataService transactionDataService,
+            ITransactionsManager transactionsManager)
         {
-            _transactionDataGenerator = transactionDataGenerator;
+            _transactionDataService = transactionDataService;
             _transactionsManager = transactionsManager;
         }
 
@@ -116,7 +116,7 @@ namespace OpenVASP.Host.Controllers
 
             #endregion Validations
 
-            var (transaction, originator) = _transactionDataGenerator.GenerateTransactionData(
+            var (transaction, originator) = _transactionDataService.GenerateTransactionData(
                 model.OriginatorFullName,
                 model.OriginatorVaan,
                 new PlaceOfBirth
@@ -149,7 +149,7 @@ namespace OpenVASP.Host.Controllers
             transaction = await _transactionsManager.RegisterOutgoingTransactionAsync(
                 transaction,
                 originator,
-                _transactionDataGenerator.CreateVirtualAssetsAccountNumber(model.BeneficiaryVaan));
+                _transactionDataService.CreateVirtualAssetsAccountNumber(model.BeneficiaryVaan));
 
             return Ok(transaction);
         }
