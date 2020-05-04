@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using OpenVASP.Messaging.Messages.Entities;
 using OpenVASP.Host.Models.Request;
 using OpenVASP.Host.Services;
-using OpenVASP.Host.Models.Response;
 using PlaceOfBirth = OpenVASP.Host.Core.Models.PlaceOfBirth;
 using PostalAddress = OpenVASP.Host.Core.Models.PostalAddress;
 
@@ -14,13 +13,17 @@ namespace OpenVASP.Host.Controllers
     [Route("api/outgoingTransactions")]
     public class OutgoingTransactionsController : Controller
     {
+        private readonly TransactionDataProcessor _transactionDataGenerator;
         private readonly TransactionsManager _transactionsManager;
-        
-        public OutgoingTransactionsController(TransactionsManager transactionsManager)
+
+        public OutgoingTransactionsController(
+            TransactionDataProcessor transactionDataGenerator,
+            TransactionsManager transactionsManager)
         {
+            _transactionDataGenerator = transactionDataGenerator;
             _transactionsManager = transactionsManager;
         }
-        
+
         /// <summary>
         /// Get all outgoing transactions for the given host.
         /// </summary>
@@ -30,7 +33,7 @@ namespace OpenVASP.Host.Controllers
         {
             return Ok(await _transactionsManager.GetOutgoingTransactionsAsync());
         }
-        
+
         /// <summary>
         /// Get a specific outgoing transaction for the given host.
         /// </summary>
@@ -110,10 +113,10 @@ namespace OpenVASP.Host.Controllers
             {
                 throw new ArgumentException("Invalid country code for Natural Person Id.");
             }
-            
+
             #endregion Validations
-            
-            var transaction = await _transactionsManager.CreateOutgoingTransactionAsync(
+
+            var (transaction, originator) = _transactionDataGenerator.GenerateTransactionData(
                 model.OriginatorFullName,
                 model.OriginatorVaan,
                 new PlaceOfBirth
@@ -135,11 +138,18 @@ namespace OpenVASP.Host.Controllers
                 model.BeneficiaryVaan,
                 asset,
                 model.Amount,
-                model.OriginatorNaturalPersonIds?.Select(x => new NaturalPersonId(
-                    x.Id, x.Type, Country.List[x.CountryCode], x.NonStateIssuer)).ToArray(),
-                model.OriginatorJuridicalPersonIds?.Select(x => new JuridicalPersonId(
-                    x.Id, x.Type, Country.List[x.CountryCode], x.NonStateIssuer)).ToArray(),
+                model.OriginatorNaturalPersonIds?
+                    .Select(x => new NaturalPersonId(x.Id, x.Type, Country.List[x.CountryCode], x.NonStateIssuer))
+                    .ToArray(),
+                model.OriginatorJuridicalPersonIds?
+                    .Select(x => new JuridicalPersonId(x.Id, x.Type, Country.List[x.CountryCode], x.NonStateIssuer))
+                    .ToArray(),
                 model.OriginatorBic);
+
+            transaction = await _transactionsManager.RegisterOutgoingTransactionAsync(
+                transaction,
+                originator,
+                _transactionDataGenerator.CreateVirtualAssetsAccountNumber(model.BeneficiaryVaan));
 
             return Ok(transaction);
         }

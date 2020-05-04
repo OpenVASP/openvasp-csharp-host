@@ -10,7 +10,7 @@ namespace OpenVASP.Host.Controllers
     public class IncomingTransactionsController : Controller
     {
         private readonly TransactionsManager _transactionsManager;
-        
+
         public IncomingTransactionsController(TransactionsManager transactionsManager)
         {
             _transactionsManager = transactionsManager;
@@ -25,7 +25,7 @@ namespace OpenVASP.Host.Controllers
         {
             return Ok(await _transactionsManager.GetIncomingTransactionsAsync());
         }
-        
+
         /// <summary>
         /// Get a specific incoming transaction for the given host.
         /// </summary>
@@ -39,13 +39,12 @@ namespace OpenVASP.Host.Controllers
 
             return Ok(transaction);
         }
-        
+
         /// <summary>
         /// Send a TransferReply message for the given transaction.
         /// </summary>
         /// <param name="id">The Id of the transaction.</param>
-        /// <param name="shouldAllow">Whether or not the host allows the transaction.</param>
-        /// <param name="destinationAddress">The (blockchain) destination address of the beneficiary.</param>
+        /// <param name="code">Session reply message code.</param>
         /// <returns>The updated transaction.</returns>
         [HttpPut("{id}/sessionReply")]
         public async Task<IActionResult> SendSessionReplyAsync(
@@ -56,12 +55,12 @@ namespace OpenVASP.Host.Controllers
 
             return await GetIncomingTransactionAsync(id);
         }
-        
+
         /// <summary>
         /// Send a TransferReply message for the given transaction.
         /// </summary>
         /// <param name="id">The Id of the transaction.</param>
-        /// <param name="shouldAllow">Whether or not the host allows the transaction.</param>
+        /// <param name="code">Transfer reply message code.</param>
         /// <param name="destinationAddress">The (blockchain) destination address of the beneficiary.</param>
         /// <returns>The updated transaction.</returns>
         [HttpPut("{id}/transferReply")]
@@ -77,7 +76,7 @@ namespace OpenVASP.Host.Controllers
 
             return await GetIncomingTransactionAsync(id);
         }
-        
+
         /// <summary>
         /// Send a TransferConfirm message for the given transaction.
         /// </summary>
