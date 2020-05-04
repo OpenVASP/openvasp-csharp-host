@@ -171,7 +171,7 @@
             Transactions manager
             </summary>
         </member>
-        <member name="M:OpenVASP.Host.Services.TransactionsManager.#ctor(OpenVASP.Messaging.Messages.Entities.VaspInformation,OpenVASP.CSharpClient.VaspContractInfo,System.String,System.String,OpenVASP.CSharpClient.Interfaces.IEthereumRpc,OpenVASP.CSharpClient.Interfaces.IWhisperRpc,OpenVASP.CSharpClient.WhisperSignService,OpenVASP.CSharpClient.Interfaces.IEnsProvider,OpenVASP.CSharpClient.Interfaces.ITransportClient,OpenVASP.Host.Services.TransactionDataProcessor)">
+        <member name="M:OpenVASP.Host.Services.TransactionsManager.#ctor(OpenVASP.Messaging.Messages.Entities.VaspInformation,OpenVASP.CSharpClient.VaspContractInfo,System.String,System.String,OpenVASP.CSharpClient.Interfaces.IEthereumRpc,OpenVASP.CSharpClient.Interfaces.IWhisperRpc,OpenVASP.CSharpClient.WhisperSignService,OpenVASP.CSharpClient.Interfaces.IEnsProvider,OpenVASP.CSharpClient.Interfaces.ITransportClient,OpenVASP.Host.Core.Services.ITransactionDataService)">
             <summary>
             C-tor
             </summary>
