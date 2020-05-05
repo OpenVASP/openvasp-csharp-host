@@ -4,19 +4,20 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using OpenVASP.Host.Core.Models;
+using OpenVASP.Host.Core.Services;
 using OpenVASP.CSharpClient;
+using OpenVASP.CSharpClient.Events;
 using OpenVASP.CSharpClient.Interfaces;
 using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;
 using Transaction = OpenVASP.Host.Core.Models.Transaction;
-using OpenVASP.Host.Core.Services;
 
 namespace OpenVASP.Host.Services
 {
     /// <summary>
     /// Transactions manager
     /// </summary>
-    public class TransactionsManager : IVaspCallbacks, ITransactionsManager
+    public class TransactionsManager : ITransactionsManager
     {
         private readonly List<Transaction> _outgoingTransactions;
         private readonly List<Transaction> _incomingTransactions;
@@ -51,8 +52,13 @@ namespace OpenVASP.Host.Services
                 ethereumRpc,
                 ensProvider,
                 signService,
-                transportClient,
-                this);
+                transportClient);
+            _vaspClient.SessionRequestMessageReceived += SessionRequestMessageReceivedAsync;
+            _vaspClient.SessionReplyMessageReceived += SessionReplyMessageReceivedAsync;
+            _vaspClient.TransferReplyMessageReceived += TransferReplyMessageReceivedAsync;
+            _vaspClient.TransferConfirmationMessageReceived += TransferConfirmationMessageReceivedAsync;
+            _vaspClient.TransferRequestMessageReceived += TransferRequestMessageReceivedAsync;
+            _vaspClient.TransferDispatchMessageReceived += TransferDispatchMessageReceivedAsync;
 
             _transactionDataService = transactionDataService;
         }
@@ -73,25 +79,6 @@ namespace OpenVASP.Host.Services
             return transaction;
         }
 
-        /// <inheritdoc cref="IVaspCallbacks"/>
-        public Task SessionRequestMessageReceivedAsync(string sessionId, SessionRequestMessage message)
-        {
-            var transaction = new Transaction
-            {
-                Status = TransactionStatus.SessionRequested,
-                Id = Guid.NewGuid().ToString(),
-                SessionId = sessionId,
-                CreationDateTime = DateTime.UtcNow
-            };
-
-            lock (_incomingTransactions)
-            {
-                _incomingTransactions.Add(transaction);
-            }
-
-            return Task.CompletedTask;
-        }
-
         public async Task SendSessionReplyAsync(string id, SessionReplyMessage.SessionReplyMessageCode code)
         {
             var transaction = _incomingTransactions.SingleOrDefault(x => x.Id == id);
@@ -110,56 +97,6 @@ namespace OpenVASP.Host.Services
                 transaction.Status = TransactionStatus.SessionDeclined;
                 transaction.SessionDeclineCode = SessionReplyMessage.GetMessageCode(code);
             }
-        }
-
-        /// <inheritdoc cref="IVaspCallbacks"/>
-        public async Task SessionReplyMessageReceivedAsync(string sessionId, SessionReplyMessage message)
-        {
-            var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == sessionId);
-
-            if (transaction == null)
-                return; //todo: handle this case.
-
-            if (message.Message.MessageCode ==
-                SessionReplyMessage.GetMessageCode(SessionReplyMessage.SessionReplyMessageCode.SessionAccepted))
-            {
-                transaction.Status = TransactionStatus.SessionConfirmed;
-
-                await _vaspClient.TransferRequestAsync(
-                    transaction.SessionId,
-                    transaction.BeneficiaryFullName,
-                    transaction.Asset,
-                    transaction.Amount);
-
-                transaction.Status = TransactionStatus.TransferRequested;
-            }
-            else
-            {
-                transaction.Status = TransactionStatus.SessionDeclined;
-                transaction.SessionDeclineCode = message.Message.MessageCode;
-            }
-        }
-
-        /// <inheritdoc cref="IVaspCallbacks"/>
-        public Task TransferReplyMessageReceivedAsync(string sessionId, TransferReplyMessage message)
-        {
-            var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == sessionId);
-
-            if (transaction == null || transaction.Status != TransactionStatus.TransferRequested)
-                return Task.CompletedTask; //todo: handle this case.
-
-            if (message.Message.MessageCode == TransferReplyMessage.GetMessageCode(TransferReplyMessage.TransferReplyMessageCode.TransferAccepted))
-            {
-                transaction.Status = TransactionStatus.TransferAllowed;
-                transaction.DestinationAddress = message.Transfer.DestinationAddress;
-            }
-            else
-            {
-                transaction.Status = TransactionStatus.TransferForbidden;
-                transaction.TransferDeclineCode = message.Message.MessageCode;
-            }
-
-            return Task.CompletedTask;
         }
 
         public async Task SendTransferDispatchAsync(
@@ -186,21 +123,6 @@ namespace OpenVASP.Host.Services
             transaction.TransactionHash = transactionHash;
             transaction.SendingAddress = sendingAddress;
             transaction.Status = TransactionStatus.TransferDispatched;
-        }
-
-        /// <inheritdoc cref="IVaspCallbacks"/>
-        public Task TransferConfirmationMessageReceivedAsync(
-            string sessionId,
-            TransferConfirmationMessage message)
-        {
-            var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == sessionId);
-
-            if (transaction == null || transaction.Status != TransactionStatus.TransferDispatched)
-                return Task.CompletedTask; //todo: handle this case.
-
-            transaction.Status = TransactionStatus.TransferConfirmed;
-
-            return Task.CompletedTask;
         }
 
         public async Task SendTransferConfirmAsync(string id)
@@ -265,32 +187,6 @@ namespace OpenVASP.Host.Services
             }
         }
 
-        /// <inheritdoc cref="IVaspCallbacks"/>
-        public Task TransferRequestMessageReceivedAsync(string sessionId, TransferRequestMessage message)
-        {
-            var transaction = _incomingTransactions.Single(x => x.SessionId == sessionId);
-
-            transaction.Status = TransactionStatus.TransferRequested;
-            _transactionDataService.FillTransactionData(transaction, message);
-
-            return Task.CompletedTask;
-        }
-
-        /// <inheritdoc cref="IVaspCallbacks"/>
-        public Task TransferDispatchMessageReceivedAsync(string sessionId, TransferDispatchMessage message)
-        {
-            var transaction = _incomingTransactions.SingleOrDefault(x => x.SessionId == sessionId);
-
-            if (transaction == null || transaction.Status != TransactionStatus.TransferAllowed)
-                return Task.CompletedTask; //todo: handle this case.
-
-            transaction.TransactionHash = message.Transaction.TransactionId;
-            transaction.SendingAddress = message.Transaction.SendingAddress;
-            transaction.Status = TransactionStatus.TransferDispatched;
-
-            return Task.CompletedTask;
-        }
-
         public Task<ReadOnlyCollection<Transaction>> GetOutgoingTransactionsAsync()
         {
             return Task.FromResult(_outgoingTransactions.AsReadOnly());
@@ -299,6 +195,108 @@ namespace OpenVASP.Host.Services
         public Task<ReadOnlyCollection<Transaction>> GetIncomingTransactionsAsync()
         {
             return Task.FromResult(_incomingTransactions.AsReadOnly());
+        }
+
+        private Task SessionRequestMessageReceivedAsync(SessionMessageEvent<SessionRequestMessage> evt)
+        {
+            var transaction = new Transaction
+            {
+                Status = TransactionStatus.SessionRequested,
+                Id = Guid.NewGuid().ToString(),
+                SessionId = evt.SessionId,
+                CreationDateTime = DateTime.UtcNow
+            };
+
+            lock (_incomingTransactions)
+            {
+                _incomingTransactions.Add(transaction);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private async Task SessionReplyMessageReceivedAsync(SessionMessageEvent<SessionReplyMessage> evt)
+        {
+            var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == evt.SessionId);
+
+            if (transaction == null)
+                return; //todo: handle this case.
+
+            if (evt.Message.Message.MessageCode ==
+                SessionReplyMessage.GetMessageCode(SessionReplyMessage.SessionReplyMessageCode.SessionAccepted))
+            {
+                transaction.Status = TransactionStatus.SessionConfirmed;
+
+                await _vaspClient.TransferRequestAsync(
+                    transaction.SessionId,
+                    transaction.BeneficiaryFullName,
+                    transaction.Asset,
+                    transaction.Amount);
+
+                transaction.Status = TransactionStatus.TransferRequested;
+            }
+            else
+            {
+                transaction.Status = TransactionStatus.SessionDeclined;
+                transaction.SessionDeclineCode = evt.Message.Message.MessageCode;
+            }
+        }
+
+        private Task TransferReplyMessageReceivedAsync(SessionMessageEvent<TransferReplyMessage> evt)
+        {
+            var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == evt.SessionId);
+
+            if (transaction == null || transaction.Status != TransactionStatus.TransferRequested)
+                return Task.CompletedTask; //todo: handle this case.
+
+            if (evt.Message.Message.MessageCode == TransferReplyMessage.GetMessageCode(TransferReplyMessage.TransferReplyMessageCode.TransferAccepted))
+            {
+                transaction.Status = TransactionStatus.TransferAllowed;
+                transaction.DestinationAddress = evt.Message.Transfer.DestinationAddress;
+            }
+            else
+            {
+                transaction.Status = TransactionStatus.TransferForbidden;
+                transaction.TransferDeclineCode = evt.Message.Message.MessageCode;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private Task TransferConfirmationMessageReceivedAsync(SessionMessageEvent<TransferConfirmationMessage> evt)
+        {
+            var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == evt.SessionId);
+
+            if (transaction == null || transaction.Status != TransactionStatus.TransferDispatched)
+                return Task.CompletedTask; //todo: handle this case.
+
+            transaction.Status = TransactionStatus.TransferConfirmed;
+
+            return Task.CompletedTask;
+        }
+
+        private Task TransferRequestMessageReceivedAsync(SessionMessageEvent<TransferRequestMessage> evt)
+        {
+            var transaction = _incomingTransactions.Single(x => x.SessionId == evt.SessionId);
+
+            transaction.Status = TransactionStatus.TransferRequested;
+            _transactionDataService.FillTransactionData(transaction, evt.Message);
+
+            return Task.CompletedTask;
+        }
+
+        private Task TransferDispatchMessageReceivedAsync(SessionMessageEvent<TransferDispatchMessage> evt)
+        {
+            var transaction = _incomingTransactions.SingleOrDefault(x => x.SessionId == evt.SessionId);
+
+            if (transaction == null || transaction.Status != TransactionStatus.TransferAllowed)
+                return Task.CompletedTask; //todo: handle this case.
+
+            transaction.TransactionHash = evt.Message.Transaction.TransactionId;
+            transaction.SendingAddress = evt.Message.Transaction.SendingAddress;
+            transaction.Status = TransactionStatus.TransferDispatched;
+
+            return Task.CompletedTask;
         }
     }
 }
