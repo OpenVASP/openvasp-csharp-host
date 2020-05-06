@@ -2,6 +2,7 @@ using System;
 using Autofac;
 using Nethereum.Web3;
 using OpenVASP.CSharpClient;
+using OpenVASP.CSharpClient.Interfaces;
 using OpenVASP.Host.Core.Services;
 using OpenVASP.Host.Services;
 using OpenVASP.Messaging;
@@ -59,13 +60,21 @@ namespace OpenVASP.Host.Modules
 
             builder.RegisterInstance(vaspInfo);
             builder.RegisterInstance(vaspContractInfo);
-            builder.RegisterInstance(_appSettings);
-            builder.RegisterInstance(ethereumRpc);
-            builder.RegisterInstance(whisperRpc);
-            builder.RegisterInstance(fakeEnsProvider);
-            builder.RegisterInstance(signService);
-            builder.RegisterInstance(transportClient);
-
+            builder.RegisterInstance(ethereumRpc)
+                .As<IEthereumRpc>()
+                .SingleInstance();
+            builder.RegisterInstance(whisperRpc)
+                .As<IWhisperRpc>()
+                .SingleInstance();
+            builder.RegisterInstance(fakeEnsProvider)
+                .As<IEnsProvider>()
+                .SingleInstance();
+            builder.RegisterInstance(signService)
+                .As<ISignService>()
+                .SingleInstance();
+            builder.RegisterInstance(transportClient)
+                .As<ITransportClient>()
+                .SingleInstance();
             builder.RegisterType<TransactionDataService>()
                 .As<ITransactionDataService>()
                 .SingleInstance();

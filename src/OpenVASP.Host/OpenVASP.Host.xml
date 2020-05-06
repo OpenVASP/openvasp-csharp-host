@@ -171,28 +171,10 @@
             Transactions manager
             </summary>
         </member>
-        <member name="M:OpenVASP.Host.Services.TransactionsManager.#ctor(OpenVASP.Messaging.Messages.Entities.VaspInformation,OpenVASP.CSharpClient.VaspContractInfo,System.String,System.String,OpenVASP.CSharpClient.Interfaces.IEthereumRpc,OpenVASP.CSharpClient.Interfaces.IWhisperRpc,OpenVASP.CSharpClient.WhisperSignService,OpenVASP.CSharpClient.Interfaces.IEnsProvider,OpenVASP.CSharpClient.Interfaces.ITransportClient,OpenVASP.Host.Core.Services.ITransactionDataService)">
+        <member name="M:OpenVASP.Host.Services.TransactionsManager.#ctor(OpenVASP.Messaging.Messages.Entities.VaspInformation,OpenVASP.CSharpClient.VaspContractInfo,System.String,System.String,OpenVASP.CSharpClient.Interfaces.IEthereumRpc,OpenVASP.CSharpClient.Interfaces.IWhisperRpc,OpenVASP.CSharpClient.Interfaces.ISignService,OpenVASP.CSharpClient.Interfaces.IEnsProvider,OpenVASP.CSharpClient.Interfaces.ITransportClient,OpenVASP.Host.Core.Services.ITransactionDataService)">
             <summary>
             C-tor
             </summary>
-        </member>
-        <member name="M:OpenVASP.Host.Services.TransactionsManager.SessionRequestMessageReceivedAsync(System.String,OpenVASP.Messaging.Messages.SessionRequestMessage)">
-            <inheritdoc cref="T:OpenVASP.CSharpClient.IVaspCallbacks"/>
-        </member>
-        <member name="M:OpenVASP.Host.Services.TransactionsManager.SessionReplyMessageReceivedAsync(System.String,OpenVASP.Messaging.Messages.SessionReplyMessage)">
-            <inheritdoc cref="T:OpenVASP.CSharpClient.IVaspCallbacks"/>
-        </member>
-        <member name="M:OpenVASP.Host.Services.TransactionsManager.TransferReplyMessageReceivedAsync(System.String,OpenVASP.Messaging.Messages.TransferReplyMessage)">
-            <inheritdoc cref="T:OpenVASP.CSharpClient.IVaspCallbacks"/>
-        </member>
-        <member name="M:OpenVASP.Host.Services.TransactionsManager.TransferConfirmationMessageReceivedAsync(System.String,OpenVASP.Messaging.Messages.TransferConfirmationMessage)">
-            <inheritdoc cref="T:OpenVASP.CSharpClient.IVaspCallbacks"/>
-        </member>
-        <member name="M:OpenVASP.Host.Services.TransactionsManager.TransferRequestMessageReceivedAsync(System.String,OpenVASP.Messaging.Messages.TransferRequestMessage)">
-            <inheritdoc cref="T:OpenVASP.CSharpClient.IVaspCallbacks"/>
-        </member>
-        <member name="M:OpenVASP.Host.Services.TransactionsManager.TransferDispatchMessageReceivedAsync(System.String,OpenVASP.Messaging.Messages.TransferDispatchMessage)">
-            <inheritdoc cref="T:OpenVASP.CSharpClient.IVaspCallbacks"/>
         </member>
     </members>
 </doc>
