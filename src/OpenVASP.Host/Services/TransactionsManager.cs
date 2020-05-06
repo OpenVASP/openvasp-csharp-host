@@ -35,7 +35,7 @@ namespace OpenVASP.Host.Services
             string signaturePrivateKeyHex,
             IEthereumRpc ethereumRpc,
             IWhisperRpc whisperRpc,
-            WhisperSignService signService,
+            ISignService signService,
             IEnsProvider ensProvider,
             ITransportClient transportClient,
             ITransactionDataService transactionDataService)
