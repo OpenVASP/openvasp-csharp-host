@@ -21,7 +21,7 @@ namespace OpenVASP.Host.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
-            var fakeEnsProvider = new FakeEnsProvider();
+            var ensProvider = new EnsProvider();
             var signService = new WhisperSignService();
             var whisperRpc = new WhisperRpc(new Web3(_appSettings.WhisperRpcUri), new WhisperMessageFormatter());
             var ethereumRpc = new EthereumRpc(new Web3(_appSettings.EthereumRpcUri));
@@ -30,25 +30,25 @@ namespace OpenVASP.Host.Modules
             var vaspInformationBuilder = new VaspInformationBuilder(ethereumRpc);
 
             VaspInformation vaspInfo;
-            VaspContractInfo vaspContractInfo;
+            VaspCode vaspCode;
 
             if (_appSettings.VaspBic != null)
             {
-                (vaspInfo, vaspContractInfo) = vaspInformationBuilder
+                (vaspInfo, vaspCode) = vaspInformationBuilder
                     .CreateForBankAsync(_appSettings.VaspSmartContractAddress, _appSettings.VaspBic)
                     .GetAwaiter()
                     .GetResult();
             }
             else if (_appSettings.VaspJuridicalIds != null)
             {
-                (vaspInfo, vaspContractInfo) = vaspInformationBuilder
+                (vaspInfo, vaspCode) = vaspInformationBuilder
                     .CreateForJuridicalPersonAsync(_appSettings.VaspSmartContractAddress, _appSettings.VaspJuridicalIds)
                     .GetAwaiter()
                     .GetResult();
             }
             else if (_appSettings.VaspNaturalIds != null)
             {
-                (vaspInfo, vaspContractInfo) = vaspInformationBuilder
+                (vaspInfo, vaspCode) = vaspInformationBuilder
                     .CreateForNaturalPersonAsync(_appSettings.VaspSmartContractAddress, _appSettings.VaspNaturalIds, _appSettings.VaspPlaceOfBirth)
                     .GetAwaiter()
                     .GetResult();
@@ -59,14 +59,14 @@ namespace OpenVASP.Host.Modules
             }
 
             builder.RegisterInstance(vaspInfo);
-            builder.RegisterInstance(vaspContractInfo);
+            builder.RegisterInstance(vaspCode);
             builder.RegisterInstance(ethereumRpc)
                 .As<IEthereumRpc>()
                 .SingleInstance();
             builder.RegisterInstance(whisperRpc)
                 .As<IWhisperRpc>()
                 .SingleInstance();
-            builder.RegisterInstance(fakeEnsProvider)
+            builder.RegisterInstance(ensProvider)
                 .As<IEnsProvider>()
                 .SingleInstance();
             builder.RegisterInstance(signService)
