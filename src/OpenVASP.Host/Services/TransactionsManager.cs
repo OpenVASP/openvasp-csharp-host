@@ -30,7 +30,7 @@ namespace OpenVASP.Host.Services
         /// </summary>
         public TransactionsManager(
             VaspInformation vaspInfo,
-            VaspContractInfo vaspContractInfo,
+            VaspCode vaspCode,
             string handshakePrivateKeyHex,
             string signaturePrivateKeyHex,
             IEthereumRpc ethereumRpc,
@@ -46,7 +46,7 @@ namespace OpenVASP.Host.Services
             _vaspInfo = vaspInfo;
             _vaspClient = VaspClient.Create(
                 vaspInfo,
-                vaspContractInfo.VaspCode,
+                vaspCode,
                 handshakePrivateKeyHex,
                 signaturePrivateKeyHex,
                 ethereumRpc,
@@ -69,7 +69,10 @@ namespace OpenVASP.Host.Services
             VirtualAssetsAccountNumber virtualAssetsAccountNumber)
         {
             transaction.Status = TransactionStatus.SessionRequested;
-            transaction.SessionId = await _vaspClient.CreateSessionAsync(originator, virtualAssetsAccountNumber);
+
+            var sessionInfo = await _vaspClient.CreateOriginatorSessionAsync(virtualAssetsAccountNumber.VaspCode);
+            
+            transaction.SessionId = sessionInfo.Id;
 
             lock (_outgoingTransactions)
             {
@@ -111,14 +114,8 @@ namespace OpenVASP.Host.Services
 
             await _vaspClient.TransferDispatchAsync(
                 transaction.SessionId,
-                new TransferReply(
-                    transaction.Asset,
-                    TransferType.BlockchainTransfer,
-                    transaction.Amount,
-                    transaction.DestinationAddress),
                 transactionHash,
-                sendingAddress,
-                transaction.BeneficiaryFullName);
+                sendingAddress);
 
             transaction.TransactionHash = transactionHash;
             transaction.SendingAddress = sendingAddress;
@@ -132,21 +129,11 @@ namespace OpenVASP.Host.Services
             if (transaction == null || transaction.Status != TransactionStatus.TransferDispatched)
                 return; //todo: handle this case.
 
-            await _vaspClient.TransferConfirmAsync(transaction.SessionId, TransferConfirmationMessage.Create(
+            await _vaspClient.TransferConfirmAsync(
                 transaction.SessionId,
-                TransferConfirmationMessage.TransferConfirmationMessageCode.TransferConfirmed,
-                _transactionDataService.GetOriginatorFromTx(transaction),
-                _transactionDataService.GetBeneficiaryFromTx(transaction),
-                new TransferReply(
-                    transaction.Asset,
-                    TransferType.BlockchainTransfer,
-                    transaction.Amount,
-                    transaction.DestinationAddress),
-                new Messaging.Messages.Entities.Transaction(
-                    transaction.TransactionHash,
-                    DateTime.UtcNow,
-                    transaction.SendingAddress),
-                _vaspInfo));
+                TransferConfirmationMessage.Create(
+                    transaction.SessionId,
+                    TransferConfirmationMessage.TransferConfirmationMessageCode.TransferConfirmed));
 
             transaction.Status = TransactionStatus.TransferConfirmed;
         }
@@ -166,14 +153,7 @@ namespace OpenVASP.Host.Services
                 TransferReplyMessage.Create(
                     transaction.SessionId,
                     code,
-                    _transactionDataService.GetOriginatorFromTx(transaction),
-                    _transactionDataService.GetBeneficiaryFromTx(transaction),
-                    new TransferReply(
-                        transaction.Asset,
-                        TransferType.BlockchainTransfer,
-                        transaction.Amount,
-                        destinationAddress),
-                    _vaspInfo));
+                    destinationAddress));
 
             if (code == TransferReplyMessage.TransferReplyMessageCode.TransferAccepted)
             {
@@ -229,7 +209,8 @@ namespace OpenVASP.Host.Services
 
                 await _vaspClient.TransferRequestAsync(
                     transaction.SessionId,
-                    transaction.BeneficiaryFullName,
+                    _transactionDataService.GetOriginatorFromTx(transaction),
+                    _transactionDataService.GetBeneficiaryFromTx(transaction),
                     transaction.Asset,
                     transaction.Amount);
 
@@ -252,7 +233,7 @@ namespace OpenVASP.Host.Services
             if (evt.Message.Message.MessageCode == TransferReplyMessage.GetMessageCode(TransferReplyMessage.TransferReplyMessageCode.TransferAccepted))
             {
                 transaction.Status = TransactionStatus.TransferAllowed;
-                transaction.DestinationAddress = evt.Message.Transfer.DestinationAddress;
+                transaction.DestinationAddress = evt.Message.DestinationAddress;
             }
             else
             {
