@@ -69,7 +69,10 @@ namespace OpenVASP.Host.Services
             VirtualAssetsAccountNumber virtualAssetsAccountNumber)
         {
             transaction.Status = TransactionStatus.SessionRequested;
-            transaction.SessionId = await _vaspClient.CreateSessionAsync(originator, virtualAssetsAccountNumber);
+
+            var sessionInfo = await _vaspClient.CreateOriginatorSessionAsync(virtualAssetsAccountNumber.VaspCode);
+            
+            transaction.SessionId = sessionInfo.Id;
 
             lock (_outgoingTransactions)
             {
@@ -149,7 +152,8 @@ namespace OpenVASP.Host.Services
                 transaction.SessionId,
                 TransferReplyMessage.Create(
                     transaction.SessionId,
-                    code));
+                    code,
+                    destinationAddress));
 
             if (code == TransferReplyMessage.TransferReplyMessageCode.TransferAccepted)
             {
@@ -205,7 +209,8 @@ namespace OpenVASP.Host.Services
 
                 await _vaspClient.TransferRequestAsync(
                     transaction.SessionId,
-                    transaction.BeneficiaryFullName,
+                    _transactionDataService.GetOriginatorFromTx(transaction),
+                    _transactionDataService.GetBeneficiaryFromTx(transaction),
                     transaction.Asset,
                     transaction.Amount);
 
@@ -228,7 +233,7 @@ namespace OpenVASP.Host.Services
             if (evt.Message.Message.MessageCode == TransferReplyMessage.GetMessageCode(TransferReplyMessage.TransferReplyMessageCode.TransferAccepted))
             {
                 transaction.Status = TransactionStatus.TransferAllowed;
-                transaction.DestinationAddress = evt.Message.Transfer.DestinationAddress;
+                transaction.DestinationAddress = evt.Message.DestinationAddress;
             }
             else
             {
