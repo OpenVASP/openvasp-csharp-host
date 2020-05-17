@@ -1,6 +1,6 @@
 ﻿using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Transaction = OpenVASP.Host.Core.Models.Transaction;
 
@@ -8,9 +8,9 @@ namespace OpenVASP.Host.Core.Services
 {
     public interface ITransactionsManager
     {
-        Task<ReadOnlyCollection<Transaction>> GetOutgoingTransactionsAsync();
+        Task<List<Transaction>> GetOutgoingTransactionsAsync();
 
-        Task<ReadOnlyCollection<Transaction>> GetIncomingTransactionsAsync();
+        Task<List<Transaction>> GetIncomingTransactionsAsync();
 
         Task SendSessionReplyAsync(string id, SessionReplyMessage.SessionReplyMessageCode code);
 
