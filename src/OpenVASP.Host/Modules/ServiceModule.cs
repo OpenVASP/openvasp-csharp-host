@@ -21,12 +21,7 @@ namespace OpenVASP.Host.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
-            var ensProvider = new EnsProvider();
-            var signService = new WhisperSignService();
-            var whisperRpc = new WhisperRpc(new Web3(_appSettings.WhisperRpcUri), new WhisperMessageFormatter());
             var ethereumRpc = new EthereumRpc(new Web3(_appSettings.EthereumRpcUri));
-            var transportClient = new WhisperTransportClient(whisperRpc, signService, new WhisperMessageFormatter());
-
             var vaspInformationBuilder = new VaspInformationBuilder(ethereumRpc);
 
             VaspInformation vaspInfo;
@@ -63,16 +58,20 @@ namespace OpenVASP.Host.Modules
             builder.RegisterInstance(ethereumRpc)
                 .As<IEthereumRpc>()
                 .SingleInstance();
-            builder.RegisterInstance(whisperRpc)
-                .As<IWhisperRpc>()
+            builder.RegisterType<WhisperMessageFormatter>()
+                .As<IMessageFormatter>()
                 .SingleInstance();
-            builder.RegisterInstance(ensProvider)
+            builder.RegisterType<WhisperRpc>()
+                .As<IWhisperRpc>()
+                .SingleInstance()
+                .WithParameter(TypedParameter.From((IWeb3)new Web3(_appSettings.WhisperRpcUri)));
+            builder.RegisterType<EnsProvider>()
                 .As<IEnsProvider>()
                 .SingleInstance();
-            builder.RegisterInstance(signService)
+            builder.RegisterType<WhisperSignService>()
                 .As<ISignService>()
                 .SingleInstance();
-            builder.RegisterInstance(transportClient)
+            builder.RegisterType<WhisperTransportClient>()
                 .As<ITransportClient>()
                 .SingleInstance();
             builder.RegisterType<TransactionDataService>()

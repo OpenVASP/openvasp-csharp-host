@@ -1,13 +1,15 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using OpenVASP.Host.Core.Models;
 using OpenVASP.Host.Core.Services;
 using OpenVASP.CSharpClient;
 using OpenVASP.CSharpClient.Events;
 using OpenVASP.CSharpClient.Interfaces;
+using OpenVASP.CSharpClient.Sessions;
 using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;
 using Transaction = OpenVASP.Host.Core.Models.Transaction;
@@ -19,8 +21,14 @@ namespace OpenVASP.Host.Services
     /// </summary>
     public class TransactionsManager : ITransactionsManager
     {
-        private readonly List<Transaction> _outgoingTransactions;
-        private readonly List<Transaction> _incomingTransactions;
+        private readonly ConcurrentDictionary<string, OriginatorSession> _originatorSessionsDict =
+            new ConcurrentDictionary<string, OriginatorSession>();
+        private readonly ConcurrentDictionary<string, BeneficiarySession> _benefeciarySessionsDict =
+            new ConcurrentDictionary<string, BeneficiarySession>();
+        private readonly ConcurrentDictionary<string, Transaction> _incomingTransactionsDict =
+            new ConcurrentDictionary<string, Transaction>();
+        private readonly ConcurrentDictionary<string, Transaction> _outgoingTransactionsDict = 
+            new ConcurrentDictionary<string, Transaction>();
         private readonly VaspClient _vaspClient;
         private readonly VaspInformation _vaspInfo;
         private readonly ITransactionDataService _transactionDataService;
@@ -38,21 +46,19 @@ namespace OpenVASP.Host.Services
             ISignService signService,
             IEnsProvider ensProvider,
             ITransportClient transportClient,
-            ITransactionDataService transactionDataService)
+            ITransactionDataService transactionDataService,
+            ILoggerFactory loggerFactory)
         {
-            _outgoingTransactions = new List<Transaction>();
-            _incomingTransactions = new List<Transaction>();
-
             _vaspInfo = vaspInfo;
             _vaspClient = VaspClient.Create(
-                vaspInfo,
                 vaspCode,
                 handshakePrivateKeyHex,
                 signaturePrivateKeyHex,
                 ethereumRpc,
                 ensProvider,
                 signService,
-                transportClient);
+                transportClient,
+                loggerFactory);
             _vaspClient.SessionRequestMessageReceived += SessionRequestMessageReceivedAsync;
             _vaspClient.SessionReplyMessageReceived += SessionReplyMessageReceivedAsync;
             _vaspClient.TransferReplyMessageReceived += TransferReplyMessageReceivedAsync;
@@ -70,26 +76,28 @@ namespace OpenVASP.Host.Services
         {
             transaction.Status = TransactionStatus.SessionRequested;
 
-            var sessionInfo = await _vaspClient.CreateOriginatorSessionAsync(virtualAssetsAccountNumber.VaspCode);
-            
-            transaction.SessionId = sessionInfo.Id;
+            var originatorSession = await _vaspClient.CreateOriginatorSessionAsync(virtualAssetsAccountNumber.VaspCode);
+            _originatorSessionsDict.TryAdd(originatorSession.Id, originatorSession);
 
-            lock (_outgoingTransactions)
-            {
-                _outgoingTransactions.Add(transaction);
-            }
+            transaction.SessionId = originatorSession.Id;
+
+            _outgoingTransactionsDict.TryAdd(transaction.Id, transaction);
 
             return transaction;
         }
 
         public async Task SendSessionReplyAsync(string id, SessionReplyMessage.SessionReplyMessageCode code)
         {
-            var transaction = _incomingTransactions.SingleOrDefault(x => x.Id == id);
+            if (!_incomingTransactionsDict.TryGetValue(id, out var transaction))
+                return; //todo: handle this case.
 
-            if (transaction == null || transaction.Status != TransactionStatus.SessionRequested)
+            if (transaction.Status != TransactionStatus.SessionRequested)
                 return; //todo: handle properly
 
-            await _vaspClient.SessionReplyAsync(transaction.SessionId, code);
+            if (!_benefeciarySessionsDict.TryGetValue(transaction.SessionId, out var beneficiarySession))
+                return; //todo: handle this case.
+
+            await beneficiarySession.SessionReplyAsync(_vaspInfo, code);
 
             if (code == SessionReplyMessage.SessionReplyMessageCode.SessionAccepted)
             {
@@ -107,15 +115,16 @@ namespace OpenVASP.Host.Services
             string sendingAddress,
             string transactionHash)
         {
-            var transaction = _outgoingTransactions.SingleOrDefault(x => x.Id == id);
-
-            if (transaction == null || transaction.Status != TransactionStatus.TransferAllowed)
+            if (!_outgoingTransactionsDict.TryGetValue(id, out var transaction))
                 return; //todo: handle this case.
 
-            await _vaspClient.TransferDispatchAsync(
-                transaction.SessionId,
-                transactionHash,
-                sendingAddress);
+            if (transaction.Status != TransactionStatus.TransferAllowed)
+                return; //todo: handle this case.
+
+            if (!_originatorSessionsDict.TryGetValue(transaction.SessionId, out var originatorSession))
+                return; //todo: handle this case.
+
+            await originatorSession.TransferDispatchAsync(transactionHash, sendingAddress);
 
             transaction.TransactionHash = transactionHash;
             transaction.SendingAddress = sendingAddress;
@@ -124,13 +133,16 @@ namespace OpenVASP.Host.Services
 
         public async Task SendTransferConfirmAsync(string id)
         {
-            var transaction = _incomingTransactions.SingleOrDefault(x => x.Id == id);
-
-            if (transaction == null || transaction.Status != TransactionStatus.TransferDispatched)
+            if (!_incomingTransactionsDict.TryGetValue(id, out var transaction))
                 return; //todo: handle this case.
 
-            await _vaspClient.TransferConfirmAsync(
-                transaction.SessionId,
+            if (transaction.Status != TransactionStatus.TransferDispatched)
+                return; //todo: handle this case.
+
+            if (!_benefeciarySessionsDict.TryGetValue(transaction.SessionId, out var beneficiarySession))
+                return; //todo: handle this case.
+
+            await beneficiarySession.SendTransferConfirmationMessageAsync(
                 TransferConfirmationMessage.Create(
                     transaction.SessionId,
                     TransferConfirmationMessage.TransferConfirmationMessageCode.TransferConfirmed));
@@ -143,13 +155,16 @@ namespace OpenVASP.Host.Services
             string destinationAddress,
             TransferReplyMessage.TransferReplyMessageCode code)
         {
-            var transaction = _incomingTransactions.SingleOrDefault(x => x.Id == id);
-
-            if (transaction == null || transaction.Status != TransactionStatus.TransferRequested)
+            if (!_incomingTransactionsDict.TryGetValue(id, out var transaction))
                 return; //todo: handle this case.
 
-            await _vaspClient.TransferReplyAsync(
-                transaction.SessionId,
+            if (transaction.Status != TransactionStatus.TransferRequested)
+                return; //todo: handle this case.
+
+            if (!_benefeciarySessionsDict.TryGetValue(transaction.SessionId, out var beneficiarySession))
+                return; //todo: handle this case.
+
+            await beneficiarySession.SendTransferReplyMessageAsync(
                 TransferReplyMessage.Create(
                     transaction.SessionId,
                     code,
@@ -167,14 +182,14 @@ namespace OpenVASP.Host.Services
             }
         }
 
-        public Task<ReadOnlyCollection<Transaction>> GetOutgoingTransactionsAsync()
+        public Task<List<Transaction>> GetOutgoingTransactionsAsync()
         {
-            return Task.FromResult(_outgoingTransactions.AsReadOnly());
+            return Task.FromResult(_outgoingTransactionsDict.Values.ToList());
         }
 
-        public Task<ReadOnlyCollection<Transaction>> GetIncomingTransactionsAsync()
+        public Task<List<Transaction>> GetIncomingTransactionsAsync()
         {
-            return Task.FromResult(_incomingTransactions.AsReadOnly());
+            return Task.FromResult(_incomingTransactionsDict.Values.ToList());
         }
 
         private Task SessionRequestMessageReceivedAsync(SessionMessageEvent<SessionRequestMessage> evt)
@@ -187,19 +202,17 @@ namespace OpenVASP.Host.Services
                 CreationDateTime = DateTime.UtcNow
             };
 
-            lock (_incomingTransactions)
-            {
-                _incomingTransactions.Add(transaction);
-            }
+            _incomingTransactionsDict.TryAdd(transaction.Id, transaction);
 
             return Task.CompletedTask;
         }
 
         private async Task SessionReplyMessageReceivedAsync(SessionMessageEvent<SessionReplyMessage> evt)
         {
-            var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == evt.SessionId);
+            if (!_outgoingTransactionsDict.TryGetValue(evt.SessionId, out var transaction))
+                return; //todo: handle this case.
 
-            if (transaction == null)
+            if (!_originatorSessionsDict.TryGetValue(transaction.SessionId, out var originatorSession))
                 return; //todo: handle this case.
 
             if (evt.Message.Message.MessageCode ==
@@ -207,8 +220,7 @@ namespace OpenVASP.Host.Services
             {
                 transaction.Status = TransactionStatus.SessionConfirmed;
 
-                await _vaspClient.TransferRequestAsync(
-                    transaction.SessionId,
+                await originatorSession.TransferRequestAsync(
                     _transactionDataService.GetOriginatorFromTx(transaction),
                     _transactionDataService.GetBeneficiaryFromTx(transaction),
                     transaction.Asset,
@@ -225,9 +237,10 @@ namespace OpenVASP.Host.Services
 
         private Task TransferReplyMessageReceivedAsync(SessionMessageEvent<TransferReplyMessage> evt)
         {
-            var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == evt.SessionId);
+            if (!_outgoingTransactionsDict.TryGetValue(evt.SessionId, out var transaction))
+                return Task.CompletedTask; //todo: handle this case.
 
-            if (transaction == null || transaction.Status != TransactionStatus.TransferRequested)
+            if (transaction.Status != TransactionStatus.TransferRequested)
                 return Task.CompletedTask; //todo: handle this case.
 
             if (evt.Message.Message.MessageCode == TransferReplyMessage.GetMessageCode(TransferReplyMessage.TransferReplyMessageCode.TransferAccepted))
@@ -246,9 +259,10 @@ namespace OpenVASP.Host.Services
 
         private Task TransferConfirmationMessageReceivedAsync(SessionMessageEvent<TransferConfirmationMessage> evt)
         {
-            var transaction = _outgoingTransactions.SingleOrDefault(x => x.SessionId == evt.SessionId);
+            if (!_outgoingTransactionsDict.TryGetValue(evt.SessionId, out var transaction))
+                return Task.CompletedTask; //todo: handle this case.
 
-            if (transaction == null || transaction.Status != TransactionStatus.TransferDispatched)
+            if (transaction.Status != TransactionStatus.TransferDispatched)
                 return Task.CompletedTask; //todo: handle this case.
 
             transaction.Status = TransactionStatus.TransferConfirmed;
@@ -258,7 +272,8 @@ namespace OpenVASP.Host.Services
 
         private Task TransferRequestMessageReceivedAsync(SessionMessageEvent<TransferRequestMessage> evt)
         {
-            var transaction = _incomingTransactions.Single(x => x.SessionId == evt.SessionId);
+            if (!_incomingTransactionsDict.TryGetValue(evt.SessionId, out var transaction))
+                return Task.CompletedTask; //todo: handle this case.
 
             transaction.Status = TransactionStatus.TransferRequested;
             _transactionDataService.FillTransactionData(transaction, evt.Message);
@@ -268,9 +283,10 @@ namespace OpenVASP.Host.Services
 
         private Task TransferDispatchMessageReceivedAsync(SessionMessageEvent<TransferDispatchMessage> evt)
         {
-            var transaction = _incomingTransactions.SingleOrDefault(x => x.SessionId == evt.SessionId);
+            if (!_incomingTransactionsDict.TryGetValue(evt.SessionId, out var transaction))
+                return Task.CompletedTask; //todo: handle this case.
 
-            if (transaction == null || transaction.Status != TransactionStatus.TransferAllowed)
+            if (transaction.Status != TransactionStatus.TransferAllowed)
                 return Task.CompletedTask; //todo: handle this case.
 
             transaction.TransactionHash = evt.Message.Transaction.TransactionId;
