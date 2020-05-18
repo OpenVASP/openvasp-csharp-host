@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using OpenVASP.Host.Core.Models;
@@ -10,6 +9,7 @@ using OpenVASP.CSharpClient;
 using OpenVASP.CSharpClient.Events;
 using OpenVASP.CSharpClient.Interfaces;
 using OpenVASP.CSharpClient.Sessions;
+using OpenVASP.Host.Persistence.Abstraction;
 using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;
 using Transaction = OpenVASP.Host.Core.Models.Transaction;
@@ -25,31 +25,29 @@ namespace OpenVASP.Host.Services
             new ConcurrentDictionary<string, OriginatorSession>();
         private readonly ConcurrentDictionary<string, BeneficiarySession> _benefeciarySessionsDict =
             new ConcurrentDictionary<string, BeneficiarySession>();
-        private readonly ConcurrentDictionary<string, Transaction> _incomingTransactionsDict =
-            new ConcurrentDictionary<string, Transaction>();
-        private readonly ConcurrentDictionary<string, Transaction> _outgoingTransactionsDict = 
-            new ConcurrentDictionary<string, Transaction>();
         private readonly VaspClient _vaspClient;
-        private readonly VaspInformation _vaspInfo;
         private readonly ITransactionDataService _transactionDataService;
+        private readonly ISessionsRepository _sessionsRepository;
+        private readonly ITransactionsRepository _transactionsRepository;
+        private readonly VaspInformation _vaspInformation;
 
         /// <summary>
         /// C-tor
         /// </summary>
         public TransactionsManager(
-            VaspInformation vaspInfo,
             VaspCode vaspCode,
             string handshakePrivateKeyHex,
             string signaturePrivateKeyHex,
             IEthereumRpc ethereumRpc,
-            IWhisperRpc whisperRpc,
             ISignService signService,
             IEnsProvider ensProvider,
             ITransportClient transportClient,
             ITransactionDataService transactionDataService,
+            ISessionsRepository sessionsRepository,
+            ITransactionsRepository transactionsRepository,
+            VaspInformation vaspInformation,
             ILoggerFactory loggerFactory)
         {
-            _vaspInfo = vaspInfo;
             _vaspClient = VaspClient.Create(
                 vaspCode,
                 handshakePrivateKeyHex,
@@ -59,37 +57,49 @@ namespace OpenVASP.Host.Services
                 signService,
                 transportClient,
                 loggerFactory);
+            
             _vaspClient.SessionRequestMessageReceived += SessionRequestMessageReceivedAsync;
             _vaspClient.SessionReplyMessageReceived += SessionReplyMessageReceivedAsync;
             _vaspClient.TransferReplyMessageReceived += TransferReplyMessageReceivedAsync;
             _vaspClient.TransferConfirmationMessageReceived += TransferConfirmationMessageReceivedAsync;
             _vaspClient.TransferRequestMessageReceived += TransferRequestMessageReceivedAsync;
             _vaspClient.TransferDispatchMessageReceived += TransferDispatchMessageReceivedAsync;
+            _vaspClient.BeneficiarySessionCreated += BeneficiarySessionCreatedAsync;
 
             _transactionDataService = transactionDataService;
+            _sessionsRepository = sessionsRepository;
+            _transactionsRepository = transactionsRepository;
+            _vaspInformation = vaspInformation;
         }
 
         public async Task<Transaction> RegisterOutgoingTransactionAsync(
             Transaction transaction,
-            Originator originator,
             VirtualAssetsAccountNumber virtualAssetsAccountNumber)
         {
-            transaction.Status = TransactionStatus.SessionRequested;
+            transaction.Status = TransactionStatus.Created;
 
             var originatorSession = await _vaspClient.CreateOriginatorSessionAsync(virtualAssetsAccountNumber.VaspCode);
+            
             _originatorSessionsDict.TryAdd(originatorSession.Id, originatorSession);
-
+            
             transaction.SessionId = originatorSession.Id;
+            
+            await _transactionsRepository.CreateAsync(transaction);
 
-            _outgoingTransactionsDict.TryAdd(transaction.Id, transaction);
+            await _sessionsRepository.CreateAsync(originatorSession.SessionInfo);
+
+            await originatorSession.SessionRequestAsync(_vaspInformation);
+
+            transaction.Status = TransactionStatus.SessionRequested;
+
+            await _transactionsRepository.UpdateAsync(transaction);
 
             return transaction;
         }
 
         public async Task SendSessionReplyAsync(string id, SessionReplyMessage.SessionReplyMessageCode code)
         {
-            if (!_incomingTransactionsDict.TryGetValue(id, out var transaction))
-                return; //todo: handle this case.
+            var transaction = await _transactionsRepository.GetAsync(id);
 
             if (transaction.Status != TransactionStatus.SessionRequested)
                 return; //todo: handle properly
@@ -97,7 +107,7 @@ namespace OpenVASP.Host.Services
             if (!_benefeciarySessionsDict.TryGetValue(transaction.SessionId, out var beneficiarySession))
                 return; //todo: handle this case.
 
-            await beneficiarySession.SessionReplyAsync(_vaspInfo, code);
+            await beneficiarySession.SessionReplyAsync(_vaspInformation, code);
 
             if (code == SessionReplyMessage.SessionReplyMessageCode.SessionAccepted)
             {
@@ -108,6 +118,8 @@ namespace OpenVASP.Host.Services
                 transaction.Status = TransactionStatus.SessionDeclined;
                 transaction.SessionDeclineCode = SessionReplyMessage.GetMessageCode(code);
             }
+
+            await _transactionsRepository.UpdateAsync(transaction);
         }
 
         public async Task SendTransferDispatchAsync(
@@ -115,8 +127,7 @@ namespace OpenVASP.Host.Services
             string sendingAddress,
             string transactionHash)
         {
-            if (!_outgoingTransactionsDict.TryGetValue(id, out var transaction))
-                return; //todo: handle this case.
+            var transaction = await _transactionsRepository.GetAsync(id);
 
             if (transaction.Status != TransactionStatus.TransferAllowed)
                 return; //todo: handle this case.
@@ -129,12 +140,13 @@ namespace OpenVASP.Host.Services
             transaction.TransactionHash = transactionHash;
             transaction.SendingAddress = sendingAddress;
             transaction.Status = TransactionStatus.TransferDispatched;
+
+            await _transactionsRepository.UpdateAsync(transaction);
         }
 
         public async Task SendTransferConfirmAsync(string id)
         {
-            if (!_incomingTransactionsDict.TryGetValue(id, out var transaction))
-                return; //todo: handle this case.
+            var transaction = await _transactionsRepository.GetAsync(id);
 
             if (transaction.Status != TransactionStatus.TransferDispatched)
                 return; //todo: handle this case.
@@ -148,6 +160,8 @@ namespace OpenVASP.Host.Services
                     TransferConfirmationMessage.TransferConfirmationMessageCode.TransferConfirmed));
 
             transaction.Status = TransactionStatus.TransferConfirmed;
+
+            await _transactionsRepository.UpdateAsync(transaction);
         }
 
         public async Task SendTransferReplyAsync(
@@ -155,8 +169,7 @@ namespace OpenVASP.Host.Services
             string destinationAddress,
             TransferReplyMessage.TransferReplyMessageCode code)
         {
-            if (!_incomingTransactionsDict.TryGetValue(id, out var transaction))
-                return; //todo: handle this case.
+            var transaction = await _transactionsRepository.GetAsync(id);
 
             if (transaction.Status != TransactionStatus.TransferRequested)
                 return; //todo: handle this case.
@@ -180,40 +193,59 @@ namespace OpenVASP.Host.Services
                 transaction.Status = TransactionStatus.TransferForbidden;
                 transaction.TransferDeclineCode = TransferReplyMessage.GetMessageCode(code);
             }
-        }
 
-        public Task<List<Transaction>> GetOutgoingTransactionsAsync()
+            await _transactionsRepository.UpdateAsync(transaction);
+        }
+        
+        public async Task<List<Transaction>> GetOutgoingTransactionsAsync()
         {
-            return Task.FromResult(_outgoingTransactionsDict.Values.ToList());
+            return await _transactionsRepository.GetAsync(TransactionType.Outgoing);
         }
 
-        public Task<List<Transaction>> GetIncomingTransactionsAsync()
+        public async Task<List<Transaction>> GetIncomingTransactionsAsync()
         {
-            return Task.FromResult(_incomingTransactionsDict.Values.ToList());
+            return await _transactionsRepository.GetAsync(TransactionType.Incoming);
         }
-
-        private Task SessionRequestMessageReceivedAsync(SessionMessageEvent<SessionRequestMessage> evt)
+        
+        private async Task BeneficiarySessionCreatedAsync(BeneficiarySessionCreatedEvent evt)
         {
             var transaction = new Transaction
             {
-                Status = TransactionStatus.SessionRequested,
                 Id = Guid.NewGuid().ToString(),
+                Status = TransactionStatus.Created,
                 SessionId = evt.SessionId,
-                CreationDateTime = DateTime.UtcNow
+                CreationDateTime = DateTime.UtcNow,
+                Type = TransactionType.Incoming
             };
+            
+            await _sessionsRepository.CreateAsync(evt.Session.SessionInfo);
 
-            _incomingTransactionsDict.TryAdd(transaction.Id, transaction);
+            _benefeciarySessionsDict[evt.Session.SessionInfo.Id] = evt.Session;
+            
+            await _transactionsRepository.CreateAsync(transaction);
+        }
+        
+        private async Task SessionRequestMessageReceivedAsync(SessionMessageEvent<SessionRequestMessage> evt)
+        {
+            var transaction = await _transactionsRepository.GetBySessionIdAsync(evt.SessionId);
+            
+            if (transaction == null)
+                return; //todo: handle this case.
 
-            return Task.CompletedTask;
+            transaction.CounterPartyVasp = evt.Message.Vasp;
+            transaction.Status = TransactionStatus.SessionRequested;
+
+            await _transactionsRepository.UpdateAsync(transaction);
         }
 
         private async Task SessionReplyMessageReceivedAsync(SessionMessageEvent<SessionReplyMessage> evt)
         {
-            if (!_outgoingTransactionsDict.TryGetValue(evt.SessionId, out var transaction))
-                return; //todo: handle this case.
+            var transaction = await _transactionsRepository.GetBySessionIdAsync(evt.SessionId);
 
             if (!_originatorSessionsDict.TryGetValue(transaction.SessionId, out var originatorSession))
                 return; //todo: handle this case.
+
+            transaction.CounterPartyVasp = evt.Message.Vasp;
 
             if (evt.Message.Message.MessageCode ==
                 SessionReplyMessage.GetMessageCode(SessionReplyMessage.SessionReplyMessageCode.SessionAccepted))
@@ -233,20 +265,23 @@ namespace OpenVASP.Host.Services
                 transaction.Status = TransactionStatus.SessionDeclined;
                 transaction.SessionDeclineCode = evt.Message.Message.MessageCode;
             }
+
+            await _transactionsRepository.UpdateAsync(transaction);
         }
 
-        private Task TransferReplyMessageReceivedAsync(SessionMessageEvent<TransferReplyMessage> evt)
+        private async Task TransferReplyMessageReceivedAsync(SessionMessageEvent<TransferReplyMessage> evt)
         {
-            if (!_outgoingTransactionsDict.TryGetValue(evt.SessionId, out var transaction))
-                return Task.CompletedTask; //todo: handle this case.
+            var transaction = await _transactionsRepository.GetBySessionIdAsync(evt.SessionId);
 
-            if (transaction.Status != TransactionStatus.TransferRequested)
-                return Task.CompletedTask; //todo: handle this case.
+            if (transaction == null || transaction.Status != TransactionStatus.TransferRequested)
+                return; //todo: handle this case.
 
             if (evt.Message.Message.MessageCode == TransferReplyMessage.GetMessageCode(TransferReplyMessage.TransferReplyMessageCode.TransferAccepted))
             {
                 transaction.Status = TransactionStatus.TransferAllowed;
                 transaction.DestinationAddress = evt.Message.DestinationAddress;
+
+                await _transactionsRepository.UpdateAsync(transaction);
             }
             else
             {
@@ -254,46 +289,53 @@ namespace OpenVASP.Host.Services
                 transaction.TransferDeclineCode = evt.Message.Message.MessageCode;
             }
 
-            return Task.CompletedTask;
+            await _transactionsRepository.UpdateAsync(transaction);
         }
 
-        private Task TransferConfirmationMessageReceivedAsync(SessionMessageEvent<TransferConfirmationMessage> evt)
+        private async Task TransferConfirmationMessageReceivedAsync(SessionMessageEvent<TransferConfirmationMessage> evt)
         {
-            if (!_outgoingTransactionsDict.TryGetValue(evt.SessionId, out var transaction))
-                return Task.CompletedTask; //todo: handle this case.
+            var transaction = await _transactionsRepository.GetBySessionIdAsync(evt.SessionId);
 
-            if (transaction.Status != TransactionStatus.TransferDispatched)
-                return Task.CompletedTask; //todo: handle this case.
+            if (transaction == null || transaction.Status != TransactionStatus.TransferDispatched)
+                return; //todo: handle this case.
 
             transaction.Status = TransactionStatus.TransferConfirmed;
 
-            return Task.CompletedTask;
+            await _transactionsRepository.UpdateAsync(transaction);
+
+            if (!_originatorSessionsDict.TryGetValue(transaction.SessionId, out var originatorSession))
+                return; //todo: handle this case.
+            
+            await originatorSession.TerminateAsync(TerminationMessage.TerminationMessageCode.SessionClosedTransferOccured);
+
+            await _transactionsRepository.UpdateAsync(transaction);
         }
 
-        private Task TransferRequestMessageReceivedAsync(SessionMessageEvent<TransferRequestMessage> evt)
+        private async Task TransferRequestMessageReceivedAsync(SessionMessageEvent<TransferRequestMessage> evt)
         {
-            if (!_incomingTransactionsDict.TryGetValue(evt.SessionId, out var transaction))
-                return Task.CompletedTask; //todo: handle this case.
+            var transaction = await _transactionsRepository.GetBySessionIdAsync(evt.SessionId);
+                
+            if (transaction == null || transaction.Status != TransactionStatus.SessionConfirmed)
+                return; //todo: handle this case.
 
             transaction.Status = TransactionStatus.TransferRequested;
             _transactionDataService.FillTransactionData(transaction, evt.Message);
 
-            return Task.CompletedTask;
+            await _transactionsRepository.UpdateAsync(transaction);
         }
 
-        private Task TransferDispatchMessageReceivedAsync(SessionMessageEvent<TransferDispatchMessage> evt)
+        private async Task TransferDispatchMessageReceivedAsync(SessionMessageEvent<TransferDispatchMessage> evt)
         {
-            if (!_incomingTransactionsDict.TryGetValue(evt.SessionId, out var transaction))
-                return Task.CompletedTask; //todo: handle this case.
+            var transaction = await _transactionsRepository.GetBySessionIdAsync(evt.SessionId);
 
-            if (transaction.Status != TransactionStatus.TransferAllowed)
-                return Task.CompletedTask; //todo: handle this case.
+            if (transaction == null || transaction.Status != TransactionStatus.TransferAllowed)
+                return; //todo: handle this case.
 
             transaction.TransactionHash = evt.Message.Transaction.TransactionId;
             transaction.SendingAddress = evt.Message.Transaction.SendingAddress;
             transaction.Status = TransactionStatus.TransferDispatched;
 
-            return Task.CompletedTask;
+            await _transactionsRepository.UpdateAsync(transaction);
         }
     }
 }

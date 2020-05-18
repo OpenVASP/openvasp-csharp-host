@@ -17,7 +17,7 @@ namespace OpenVASP.Host.Core.Models
         public PostalAddress OriginatorPostalAddress { set; get; }
         public string OriginatorFullName { set; get; }
         public string OriginatorVaan { set; get; }
-
+        public VaspInformation CounterPartyVasp { set; get; }
         public NaturalPersonId[] OriginatorNaturalPersonIds { set; get; }
 
         public JuridicalPersonId[] OriginatorJuridicalPersonIds { set; get; }
@@ -34,5 +34,7 @@ namespace OpenVASP.Host.Core.Models
         public string SendingAddress { get; set; }
         public string SessionDeclineCode { set; get; }
         public string TransferDeclineCode { set; get; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public TransactionType Type { set; get; }
     }
 }
