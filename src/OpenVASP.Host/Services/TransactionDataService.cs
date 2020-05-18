@@ -12,7 +12,7 @@ namespace OpenVASP.Host.Services
 {
     public class TransactionDataService : ITransactionDataService
     {
-        public (Transaction, Originator) GenerateTransactionData(
+        public Transaction GenerateTransactionData(
             string originatorFullName,
             string originatorVaan,
             PlaceOfBirth originatorPlaceOfBirth,
@@ -23,7 +23,8 @@ namespace OpenVASP.Host.Services
             decimal amount,
             NaturalPersonId[] naturalPersonIds,
             JuridicalPersonId[] juridicalPersonIds,
-            string bic)
+            string bic,
+            TransactionType type)
         {
             var sanitizedBeneficiaryVaan = beneficiaryVaan.Replace(" ", "");
             var sanitizedOriginatorVaan = originatorVaan.Replace(" ", "");
@@ -44,31 +45,10 @@ namespace OpenVASP.Host.Services
                 OriginatorJuridicalPersonIds = juridicalPersonIds,
                 OriginatorBic = bic,
                 OriginatorNaturalPersonIds = naturalPersonIds,
+                Type = type
             };
 
-            var originator = new Originator(
-                originatorFullName,
-                sanitizedOriginatorVaan,
-                new Messaging.Messages.Entities.PostalAddress
-                (
-                    originatorPostalAddress.Street,
-                    originatorPostalAddress.Building,
-                    originatorPostalAddress.AddressLine,
-                    originatorPostalAddress.PostCode,
-                    originatorPostalAddress.Town,
-                    originatorPostalAddress.Country
-                ),
-                new Messaging.Messages.Entities.PlaceOfBirth
-                (
-                    originatorPlaceOfBirth.Date,
-                    originatorPlaceOfBirth.Town,
-                    originatorPlaceOfBirth.Country
-                ),
-                naturalPersonIds,
-                juridicalPersonIds,
-                bic);
-
-            return (transaction, originator);
+            return transaction;
         }
 
         public VirtualAssetsAccountNumber CreateVirtualAssetsAccountNumber(string beneficiaryVaan)

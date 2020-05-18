@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using OpenVASP.Host.Core.Models;
 using OpenVASP.Messaging.Messages.Entities;
 using OpenVASP.Host.Core.Services;
 using OpenVASP.Host.Models.Request;
@@ -116,7 +117,7 @@ namespace OpenVASP.Host.Controllers
 
             #endregion Validations
 
-            var (transaction, originator) = _transactionDataService.GenerateTransactionData(
+            var transaction = _transactionDataService.GenerateTransactionData(
                 model.OriginatorFullName,
                 model.OriginatorVaan,
                 new PlaceOfBirth
@@ -144,11 +145,11 @@ namespace OpenVASP.Host.Controllers
                 model.OriginatorJuridicalPersonIds?
                     .Select(x => new JuridicalPersonId(x.Id, x.Type, Country.List[x.CountryCode], x.NonStateIssuer))
                     .ToArray(),
-                model.OriginatorBic);
+                model.OriginatorBic,
+                TransactionType.Outgoing);
 
             transaction = await _transactionsManager.RegisterOutgoingTransactionAsync(
                 transaction,
-                originator,
                 _transactionDataService.CreateVirtualAssetsAccountNumber(model.BeneficiaryVaan));
 
             return Ok(transaction);
