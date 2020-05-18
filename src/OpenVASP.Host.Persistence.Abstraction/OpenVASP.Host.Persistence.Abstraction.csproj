@@ -5,7 +5,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\src\OpenVASP.Host.Core\OpenVASP.Host.Core.csproj" />
+      <ProjectReference Include="..\OpenVASP.Host.Core\OpenVASP.Host.Core.csproj" />
     </ItemGroup>
 
 </Project>
