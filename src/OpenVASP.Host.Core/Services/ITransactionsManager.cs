@@ -16,7 +16,6 @@ namespace OpenVASP.Host.Core.Services
 
         Task<Transaction> RegisterOutgoingTransactionAsync(
             Transaction transaction,
-            Originator originator,
             VirtualAssetsAccountNumber virtualAssetsAccountNumber);
 
         Task SendTransferReplyAsync(

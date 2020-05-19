@@ -4,6 +4,7 @@ using Nethereum.Web3;
 using OpenVASP.CSharpClient;
 using OpenVASP.CSharpClient.Interfaces;
 using OpenVASP.Host.Core.Services;
+using OpenVASP.Host.Persistence.Implementation;
 using OpenVASP.Host.Services;
 using OpenVASP.Messaging;
 using OpenVASP.Messaging.Messages.Entities;
@@ -12,7 +13,7 @@ namespace OpenVASP.Host.Modules
 {
     internal class ServiceModule : Module
     {
-        private AppSettings _appSettings;
+        private readonly AppSettings _appSettings;
 
         public ServiceModule(AppSettings appSettings)
         {
@@ -85,6 +86,8 @@ namespace OpenVASP.Host.Modules
                 .WithParameter("handshakePrivateKeyHex", _appSettings.HandshakePrivateKeyHex)
                 .WithParameter("signaturePrivateKeyHex", _appSettings.SignaturePrivateKeyHex);
 
+            builder.RegisterInMemoryRepositories();
+            
             base.Load(builder);
         }
     }

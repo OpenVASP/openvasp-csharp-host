@@ -1,4 +1,6 @@
-﻿using OpenVASP.Messaging.Messages;
+﻿using OpenVASP.CSharpClient.Sessions;
+using OpenVASP.Host.Core.Models;
+using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;
 using PlaceOfBirth = OpenVASP.Host.Core.Models.PlaceOfBirth;
 using PostalAddress = OpenVASP.Host.Core.Models.PostalAddress;
@@ -8,7 +10,7 @@ namespace OpenVASP.Host.Core.Services
 {
     public interface ITransactionDataService
     {
-        (Transaction, Originator) GenerateTransactionData(
+        Transaction GenerateTransactionData(
             string originatorFullName,
             string originatorVaan,
             PlaceOfBirth originatorPlaceOfBirth,
@@ -19,7 +21,8 @@ namespace OpenVASP.Host.Core.Services
             decimal amount,
             NaturalPersonId[] naturalPersonIds,
             JuridicalPersonId[] juridicalPersonIds,
-            string bic);
+            string bic,
+            TransactionType type);
 
         VirtualAssetsAccountNumber CreateVirtualAssetsAccountNumber(string beneficiaryVaan);
 
