@@ -25,7 +25,7 @@ namespace OpenVASP.Host.Services
             new ConcurrentDictionary<string, OriginatorSession>();
         private readonly ConcurrentDictionary<string, BeneficiarySession> _benefeciarySessionsDict =
             new ConcurrentDictionary<string, BeneficiarySession>();
-        private readonly VaspClient _vaspClient;
+        private readonly IVaspClient _vaspClient;
         private readonly ITransactionDataService _transactionDataService;
         private readonly ISessionsRepository _sessionsRepository;
         private readonly ITransactionsRepository _transactionsRepository;
@@ -154,7 +154,7 @@ namespace OpenVASP.Host.Services
             if (!_benefeciarySessionsDict.TryGetValue(transaction.SessionId, out var beneficiarySession))
                 return; //todo: handle this case.
 
-            await beneficiarySession.SendTransferConfirmationMessageAsync(
+            await beneficiarySession.TransferConfirmAsync(
                 TransferConfirmationMessage.Create(
                     transaction.SessionId,
                     TransferConfirmationMessage.TransferConfirmationMessageCode.TransferConfirmed));
@@ -177,7 +177,7 @@ namespace OpenVASP.Host.Services
             if (!_benefeciarySessionsDict.TryGetValue(transaction.SessionId, out var beneficiarySession))
                 return; //todo: handle this case.
 
-            await beneficiarySession.SendTransferReplyMessageAsync(
+            await beneficiarySession.TransferReplyAsync(
                 TransferReplyMessage.Create(
                     transaction.SessionId,
                     code,
