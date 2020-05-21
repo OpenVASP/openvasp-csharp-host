@@ -1,18 +1,21 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using AutoMapper;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 using OpenVASP.Host.Modules;
-using OpenVASP.Host.Services;
 using OpenVASP.Messaging.Messages.Entities;
 
 namespace OpenVASP.Host
@@ -34,9 +37,16 @@ namespace OpenVASP.Host
         public void ConfigureServices(IServiceCollection services)
         {
             services
-                .AddControllersWithViews()
-                .AddNewtonsoftJson();
-            
+                .AddControllers()
+                .AddNewtonsoftJson(options =>
+                {
+                    options.SerializerSettings.ContractResolver = new DefaultContractResolver();
+                    options.SerializerSettings.Converters.Add(new StringEnumConverter());
+                    options.UseMemberCasing();
+                });
+
+            services.AddAutoMapper(typeof(AutoMapperProfile));
+
             _appSettings = new AppSettings
             {
                 InstanceName = Configuration["AppSettings:InstanceName"],
@@ -92,19 +102,19 @@ namespace OpenVASP.Host
             {
                 throw new ArgumentException("Invalid configuration.");
             }
-            
+
             if (_appSettings.VaspJuridicalIds != null && ( _appSettings.VaspNaturalIds != null ||
                 _appSettings.VaspPlaceOfBirth != null || _appSettings.VaspBic != null))
             {
                 throw new ArgumentException("Invalid configuration.");
             }
-            
+
             if (_appSettings.VaspBic != null && ( _appSettings.VaspNaturalIds != null ||
                 _appSettings.VaspPlaceOfBirth != null || _appSettings.VaspJuridicalIds != null))
             {
                 throw new ArgumentException("Invalid configuration.");
             }
-            
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = $"OpenVASP Demo ({_appSettings.InstanceName})", Version = "v1" });
@@ -113,6 +123,7 @@ namespace OpenVASP.Host
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
             });
+            services.AddSwaggerGenNewtonsoftSupport();
         }
 
         public void ConfigureContainer(ContainerBuilder builder)
@@ -124,7 +135,27 @@ namespace OpenVASP.Host
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             ApplicationContainer = app.ApplicationServices.GetAutofacRoot();
-            
+
+            app.UseCors(builder => builder
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .SetIsOriginAllowed(host => true)
+                    .AllowCredentials()
+                );
+
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Method == "OPTIONS")
+                {
+                    context.Response.StatusCode = 200;
+                    await context.Response.WriteAsync("");
+                }
+                else
+                {
+                    await next.Invoke();
+                }
+            });
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -135,18 +166,28 @@ namespace OpenVASP.Host
             }
             
             app.UseStaticFiles();
-            
+
+            //app.UseAuthentication();
+            //app.UseAuthorization();
+
             app.UseRouting();
-            app.UseAuthentication();
-            app.UseAuthorization();
             app.UseEndpoints(endpoints => {
-                endpoints.MapControllerRoute(
-                    "default",
-                    "{controller=Home}/{action=Index}/{id?}");
+                endpoints.MapControllers();
             });
-            
-            app.UseSwagger();
-            app.UseSwaggerUI(a => a.SwaggerEndpoint("/swagger/v1/swagger.json", "OpenVASP Demo"));
+
+            app.UseSwagger(c =>
+            {
+                c.PreSerializeFilters.Add((swagger, httpReq) =>
+                {
+                    swagger.Servers = new List<OpenApiServer> { new OpenApiServer { Url = $"{httpReq.Scheme}://{httpReq.Host.Value}" } };
+                });
+            });
+            app.UseSwaggerUI(a =>
+            {
+                a.RoutePrefix = "swagger/ui";
+                a.SwaggerEndpoint("/swagger/v1/swagger.json", "OpenVASP Demo");
+                a.DocumentTitle = $"OpenVASP Demo ({_appSettings.InstanceName})";
+            });
         }
     }
 }

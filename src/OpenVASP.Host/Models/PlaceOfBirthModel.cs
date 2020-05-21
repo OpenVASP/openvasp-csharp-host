@@ -20,7 +20,7 @@ namespace OpenVASP.Host.Models
         /// Country
         /// </summary>
         [Required]
-        public string Country { set; get; }
+        public string CountryIso2Code { set; get; }
         
         /// <summary>
         /// Date of birth.

@@ -1,7 +1,11 @@
+using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using OpenVASP.Host.Core.Services;
+using OpenVASP.Host.Models.Response;
 using OpenVASP.Messaging.Messages;
 
 namespace OpenVASP.Host.Controllers
@@ -10,10 +14,14 @@ namespace OpenVASP.Host.Controllers
     public class IncomingTransactionsController : Controller
     {
         private readonly ITransactionsManager _transactionsManager;
+        private readonly IMapper _mapper;
 
-        public IncomingTransactionsController(ITransactionsManager transactionsManager)
+        public IncomingTransactionsController(
+            ITransactionsManager transactionsManager,
+            IMapper mapper)
         {
             _transactionsManager = transactionsManager;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -21,9 +29,12 @@ namespace OpenVASP.Host.Controllers
         /// </summary>
         /// <returns>A list of incoming transactions.</returns>
         [HttpGet]
+        [ProducesResponseType(typeof(List<TransactionDetailsModel>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetIncomingTransactionsAsync()
         {
-            return Ok(await _transactionsManager.GetIncomingTransactionsAsync());
+            var txs = await _transactionsManager.GetIncomingTransactionsAsync();
+
+            return Ok(_mapper.Map<List<TransactionDetailsModel>>(txs));
         }
 
         /// <summary>
@@ -32,12 +43,13 @@ namespace OpenVASP.Host.Controllers
         /// <param name="id">The Id of the transaction.</param>
         /// <returns>A requested transaction.</returns>
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(TransactionDetailsModel), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetIncomingTransactionAsync([FromRoute] string id)
         {
             var transaction = (await _transactionsManager.GetIncomingTransactionsAsync())
                 .SingleOrDefault(x => x.Id == id);
 
-            return Ok(transaction);
+            return Ok(_mapper.Map<TransactionDetailsModel>(transaction));
         }
 
         /// <summary>
@@ -47,13 +59,16 @@ namespace OpenVASP.Host.Controllers
         /// <param name="code">Session reply message code.</param>
         /// <returns>The updated transaction.</returns>
         [HttpPut("{id}/sessionReply")]
+        [ProducesResponseType(typeof(TransactionDetailsModel), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> SendSessionReplyAsync(
             [FromRoute] string id,
             [FromQuery] SessionReplyMessage.SessionReplyMessageCode code)
         {
             await _transactionsManager.SendSessionReplyAsync(id, code);
 
-            return await GetIncomingTransactionAsync(id);
+            var transaction = await GetIncomingTransactionAsync(id);
+
+            return Ok(_mapper.Map<TransactionDetailsModel>(transaction));
         }
 
         /// <summary>
@@ -64,6 +79,7 @@ namespace OpenVASP.Host.Controllers
         /// <param name="destinationAddress">The (blockchain) destination address of the beneficiary.</param>
         /// <returns>The updated transaction.</returns>
         [HttpPut("{id}/transferReply")]
+        [ProducesResponseType(typeof(TransactionDetailsModel), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> SendTransferReplyAsync(
             [FromRoute] string id,
             [FromQuery] TransferReplyMessage.TransferReplyMessageCode code,
@@ -74,7 +90,9 @@ namespace OpenVASP.Host.Controllers
                 destinationAddress,
                 code);
 
-            return await GetIncomingTransactionAsync(id);
+            var transaction = await GetIncomingTransactionAsync(id);
+
+            return Ok(_mapper.Map<TransactionDetailsModel>(transaction));
         }
 
         /// <summary>
@@ -83,12 +101,15 @@ namespace OpenVASP.Host.Controllers
         /// <param name="id">The Id of the transaction.</param>
         /// <returns>The updated transaction.</returns>
         [HttpPut("{id}/transferConfirm")]
+        [ProducesResponseType(typeof(TransactionDetailsModel), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> SendTransferConfirmAsync(
             [FromRoute] string id)
         {
             await _transactionsManager.SendTransferConfirmAsync(id);
 
-            return await GetIncomingTransactionAsync(id);
+            var transaction = await GetIncomingTransactionAsync(id);
+
+            return Ok(_mapper.Map<TransactionDetailsModel>(transaction));
         }
     }
 }

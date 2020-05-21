@@ -1,11 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using OpenVASP.Host.Core.Models;
-using OpenVASP.Messaging.Messages.Entities;
 using OpenVASP.Host.Core.Services;
 using OpenVASP.Host.Models.Request;
+using OpenVASP.Host.Models.Response;
+using OpenVASP.Messaging.Messages.Entities;
 using PlaceOfBirth = OpenVASP.Host.Core.Models.PlaceOfBirth;
 using PostalAddress = OpenVASP.Host.Core.Models.PostalAddress;
 
@@ -16,13 +20,16 @@ namespace OpenVASP.Host.Controllers
     {
         private readonly ITransactionDataService _transactionDataService;
         private readonly ITransactionsManager _transactionsManager;
+        private readonly IMapper _mapper;
 
         public OutgoingTransactionsController(
             ITransactionDataService transactionDataService,
-            ITransactionsManager transactionsManager)
+            ITransactionsManager transactionsManager,
+            IMapper mapper)
         {
             _transactionDataService = transactionDataService;
             _transactionsManager = transactionsManager;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -30,9 +37,12 @@ namespace OpenVASP.Host.Controllers
         /// </summary>
         /// <returns>A list of outgoing transactions.</returns>
         [HttpGet]
+        [ProducesResponseType(typeof(List<TransactionDetailsModel>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetOutgoingTransactionsAsync()
         {
-            return Ok(await _transactionsManager.GetOutgoingTransactionsAsync());
+            var txs = await _transactionsManager.GetOutgoingTransactionsAsync();
+
+            return Ok(_mapper.Map<List<TransactionDetailsModel>>(txs));
         }
 
         /// <summary>
@@ -41,12 +51,13 @@ namespace OpenVASP.Host.Controllers
         /// <param name="id">The Id of the transaction.</param>
         /// <returns>A requested transaction.</returns>
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(TransactionDetailsModel), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetOutgoingTransactionAsync([FromRoute] string id)
         {
             var transaction = (await _transactionsManager.GetOutgoingTransactionsAsync())
                 .SingleOrDefault(x => x.Id == id);
 
-            return Ok(transaction);
+            return Ok(_mapper.Map<TransactionDetailsModel>(transaction));
         }
 
         /// <summary>
@@ -56,6 +67,7 @@ namespace OpenVASP.Host.Controllers
         /// <returns>The created transaction.</returns>
         /// <exception cref="InvalidOperationException">In case an invalid Asset was provided.</exception>
         [HttpPost("create")]
+        [ProducesResponseType(typeof(TransactionDetailsModel), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> CreateAsync([FromBody] CreateOutgoingTransactionRequestModel model)
         {
             #region Validations
@@ -63,13 +75,13 @@ namespace OpenVASP.Host.Controllers
             var originatorPlaceOfBirthCountry =
                 Country
                     .List
-                    .Single(x => x.Value.Name == model.OriginatorPlaceOfBirth.Country)
+                    .Single(x => x.Value.TwoLetterCode == model.OriginatorPlaceOfBirth.CountryIso2Code)
                     .Value;
             
             var originatorPostalAddressCountry =
                 Country
                     .List
-                    .Single(x => x.Value.Name == model.OriginatorPostalAddress.Country)
+                    .Single(x => x.Value.TwoLetterCode == model.OriginatorPostalAddress.CountryIso2Code)
                     .Value;
 
             if (model.Asset != "ETH" && model.Asset != "BTC")
@@ -152,7 +164,7 @@ namespace OpenVASP.Host.Controllers
                 transaction,
                 _transactionDataService.CreateVirtualAssetsAccountNumber(model.BeneficiaryVaan));
 
-            return Ok(transaction);
+            return Ok(_mapper.Map<TransactionDetailsModel>(transaction));
         }
 
         /// <summary>
@@ -163,6 +175,7 @@ namespace OpenVASP.Host.Controllers
         /// <param name="transactionHash">The (blockchain) transaction hash.</param>
         /// <returns>The updated transaction.</returns>
         [HttpPut("{id}/transferDispatch")]
+        [ProducesResponseType(typeof(TransactionDetailsModel), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> SendTransferDispatchAsync(
             [FromRoute] string id,
             [FromQuery] string sendingAddress,
@@ -171,7 +184,9 @@ namespace OpenVASP.Host.Controllers
         {
             await _transactionsManager.SendTransferDispatchAsync(id, sendingAddress, transactionHash);
 
-            return await GetOutgoingTransactionAsync(id);
+            var transaction = await GetOutgoingTransactionAsync(id);
+
+            return Ok(_mapper.Map<TransactionDetailsModel>(transaction));
         }
     }
 }
