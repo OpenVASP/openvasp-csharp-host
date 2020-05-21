@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using AutoMapper;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using AutoMapper;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -16,6 +17,7 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using OpenVASP.Host.Modules;
+using OpenVASP.Host.Validation;
 using OpenVASP.Messaging.Messages.Entities;
 
 namespace OpenVASP.Host
@@ -25,7 +27,7 @@ namespace OpenVASP.Host
         public ILifetimeScope ApplicationContainer { get; private set; }
 
         private AppSettings _appSettings;
-        
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -43,6 +45,10 @@ namespace OpenVASP.Host
                     options.SerializerSettings.ContractResolver = new DefaultContractResolver();
                     options.SerializerSettings.Converters.Add(new StringEnumConverter());
                     options.UseMemberCasing();
+                })
+                .AddFluentValidation(x =>
+                {
+                    x.RegisterValidatorsFromAssemblyContaining<CreateOutgoingTransactionRequestModelValidator>();
                 });
 
             services.AddAutoMapper(typeof(AutoMapperProfile));

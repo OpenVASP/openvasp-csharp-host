@@ -46,6 +46,14 @@ namespace OpenVASP.Host.Controllers
         [ProducesResponseType(typeof(TransactionDetailsModel), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> GetIncomingTransactionAsync([FromRoute] string id)
         {
+            if (string.IsNullOrWhiteSpace(id))
+                return ValidationProblem(
+                    new ValidationProblemDetails(
+                        new Dictionary<string, string[]>
+                        {
+                            { nameof(id), new [] { $"{nameof(id)} is required" } }
+                        }));
+
             var transaction = (await _transactionsManager.GetIncomingTransactionsAsync())
                 .SingleOrDefault(x => x.Id == id);
 
@@ -64,6 +72,14 @@ namespace OpenVASP.Host.Controllers
             [FromRoute] string id,
             [FromQuery] SessionReplyMessage.SessionReplyMessageCode code)
         {
+            if (string.IsNullOrWhiteSpace(id))
+                return ValidationProblem(
+                    new ValidationProblemDetails(
+                        new Dictionary<string, string[]>
+                        {
+                            { nameof(id), new [] { $"{nameof(id)} is required" } }
+                        }));
+
             await _transactionsManager.SendSessionReplyAsync(id, code);
 
             var transaction = await GetIncomingTransactionAsync(id);
@@ -85,6 +101,17 @@ namespace OpenVASP.Host.Controllers
             [FromQuery] TransferReplyMessage.TransferReplyMessageCode code,
             [FromQuery] string destinationAddress)
         {
+            var validationErrorsDict = new Dictionary<string, string[]>();
+
+            if (string.IsNullOrWhiteSpace(id))
+                validationErrorsDict.Add(nameof(id), new[] { $"{nameof(id)} is required" });
+
+            if (string.IsNullOrWhiteSpace(destinationAddress))
+                validationErrorsDict.Add(nameof(destinationAddress), new[] { $"{nameof(destinationAddress)} is required" });
+
+            if (validationErrorsDict.Count > 0)
+                return ValidationProblem(new ValidationProblemDetails(validationErrorsDict));
+
             await _transactionsManager.SendTransferReplyAsync(
                 id,
                 destinationAddress,
@@ -102,9 +129,16 @@ namespace OpenVASP.Host.Controllers
         /// <returns>The updated transaction.</returns>
         [HttpPut("{id}/transferConfirm")]
         [ProducesResponseType(typeof(TransactionDetailsModel), (int)HttpStatusCode.OK)]
-        public async Task<IActionResult> SendTransferConfirmAsync(
-            [FromRoute] string id)
+        public async Task<IActionResult> SendTransferConfirmAsync([FromRoute] string id)
         {
+            if (string.IsNullOrWhiteSpace(id))
+                return ValidationProblem(
+                    new ValidationProblemDetails(
+                        new Dictionary<string, string[]>
+                        {
+                            { nameof(id), new [] { $"{nameof(id)} is required" } }
+                        }));
+
             await _transactionsManager.SendTransferConfirmAsync(id);
 
             var transaction = await GetIncomingTransactionAsync(id);
