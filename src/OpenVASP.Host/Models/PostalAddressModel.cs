@@ -41,6 +41,6 @@ namespace OpenVASP.Host.Models
         /// Country.
         /// </summary>
         [Required]
-        public string Country { get; set; }
+        public string CountryIso2Code { get; set; }
     }
 }

@@ -1,6 +1,4 @@
 using System;
-using Newtonsoft.Json.Converters;
-using OpenVASP.Messaging.Messages.Entities;
 
 namespace OpenVASP.Host.Models.Response
 {
@@ -22,10 +20,11 @@ namespace OpenVASP.Host.Models.Response
         public DateTime OriginatorPlaceOfBirthDate { set; get; }
         public string OriginatorFullName { set; get; }
         public string OriginatorVaan { set; get; }
+        public string CounterPartyVaspName { get; set; }
         public string BeneficiaryFullName { set; get; }
         public string BeneficiaryVaan { set; get; }
         public DateTime CreationDateTime { set; get; }
-        public string StatusStringified { set; get; }
+        public string Status { set; get; }
         public string DestinationAddress { get; set; }
         public string TransactionHash { get; set; }
         public string SendingAddress { get; set; }

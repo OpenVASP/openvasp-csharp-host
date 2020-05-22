@@ -7,12 +7,12 @@ namespace OpenVASP.Host.Models
     public class NaturalPersonIdModel
     {
         public string Id { set; get; }
-        
+
         [JsonConverter(typeof(StringEnumConverter))]
         public NaturalIdentificationType Type { set; get; }
-        
-        public string CountryCode { set; get; }
-        
+
+        public string CountryIso2Code { set; get; }
+
         public string NonStateIssuer { set; get; }
     }
 }

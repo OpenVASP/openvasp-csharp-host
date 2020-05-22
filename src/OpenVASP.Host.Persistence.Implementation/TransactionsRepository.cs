@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -60,7 +59,11 @@ namespace OpenVASP.Host.Persistence.Implementation
         {
             lock (_lock)
             {
-                return Task.FromResult(_transactions.Where(x => x.Type == type).ToList());
+                return Task.FromResult(
+                    _transactions
+                    .Where(x => x.Type == type)
+                    .OrderByDescending(i => i.CreationDateTime)
+                    .ToList());
             }
         }
     }
