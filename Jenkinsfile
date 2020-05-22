@@ -1,27 +1,23 @@
 pipeline {
   agent any
   stages {
-    stage('Dotnet Restore') {
-      steps {
-        sh 'dotnet restore'
-      }
-    }
-
     stage('Dotnet Build') {
       steps {
-        sh 'dotnet build --configuration Release --no-restore ${RepoName}.sln'
+        sh '''dotnet restore src/${ServiceName}/${ServiceName}.csproj
+dotnet build --configuration Release --no-restore src/${ServiceName}/${ServiceName}.csproj'''
       }
     }
 
     stage('Dotnet Publish') {
       steps {
-        sh 'dotnet publish src/${ServiceName}/${ServiceName}.csproj --configuration Release --output ../../docker/service --no-restore'
+        sh '''dotnet publish src/${ServiceName}/${ServiceName}.csproj --configuration Release --output ./docker/service --no-restore
+ls ./docker/service'''
       }
     }
 
     stage('Docker Build') {
       steps {
-        sh '''
+        sh '''        pwd
         docker build --tag openvaspenterprise/${DockerName}:0.${BUILD_ID} ./docker/service
         docker tag openvaspenterprise/${DockerName}:${BUILD_ID} openvaspenterprise/${DockerName}:latest
         docker login -u=$REGISTRY_AUTH_USR -p=$REGISTRY_AUTH_PSW

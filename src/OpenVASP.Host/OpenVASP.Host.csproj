@@ -29,4 +29,10 @@
     <ProjectReference Include="..\OpenVASP.Host.Core\OpenVASP.Host.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Dockerfile">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
