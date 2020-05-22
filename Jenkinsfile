@@ -3,7 +3,7 @@ pipeline {
   stages {
     stage('Dotnet Restore') {
       steps {
-        sh 'dotnet restore src/${ServiceName}/${ServiceName}.csproj --configfile src/${ServiceName}/nuget.config'
+        sh 'dotnet restore src/${ServiceName}/${ServiceName}.csproj'
       }
     }
 
