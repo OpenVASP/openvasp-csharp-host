@@ -81,7 +81,7 @@
             Town.
             </summary>
         </member>
-        <member name="P:OpenVASP.Host.Models.PlaceOfBirthModel.Country">
+        <member name="P:OpenVASP.Host.Models.PlaceOfBirthModel.CountryIso2Code">
             <summary>
             Country
             </summary>
@@ -121,7 +121,7 @@
             Town.
             </summary>
         </member>
-        <member name="P:OpenVASP.Host.Models.PostalAddressModel.Country">
+        <member name="P:OpenVASP.Host.Models.PostalAddressModel.CountryIso2Code">
             <summary>
             Country.
             </summary>
