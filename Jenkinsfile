@@ -3,27 +3,24 @@ pipeline {
   stages {
     stage('Dotnet Build') {
       steps {
-        sh '''dotnet restore src/${ServiceName}/${ServiceName}.csproj
-dotnet build --configuration Release --no-restore src/${ServiceName}/${ServiceName}.csproj'''
+        sh 'dotnet build --configuration Release src/${ServiceName}/${ServiceName}.csproj'
       }
     }
 
     stage('Dotnet Publish') {
       steps {
-        sh '''dotnet publish src/${ServiceName}/${ServiceName}.csproj --configuration Release --output ./docker/service --no-restore
-ls ./docker/service'''
+        sh 'dotnet publish src/${ServiceName}/${ServiceName}.csproj --configuration Release --output ./docker/service --no-restore'
       }
     }
 
     stage('Docker Build') {
       steps {
-        sh '''        pwd
+        sh '''
         docker build --tag openvaspenterprise/${DockerName}:0.${BUILD_ID} ./docker/service
-        docker tag openvaspenterprise/${DockerName}:${BUILD_ID} openvaspenterprise/${DockerName}:latest
+        docker tag openvaspenterprise/${DockerName}:0.${BUILD_ID} openvaspenterprise/${DockerName}:latest
         docker login -u=$REGISTRY_AUTH_USR -p=$REGISTRY_AUTH_PSW
         docker push openvaspenterprise/${DockerName}:0.${BUILD_ID}
-        docker push openvaspenterprise/${DockerName}:latest
-'''
+        docker push openvaspenterprise/${DockerName}:latest'''
       }
     }
 
