@@ -21,8 +21,8 @@ pipeline {
 
     stage('Docker Build') {
       steps {
-        sh '''
-        docker build -f src/${ServiceName}/Dockerfile --tag openvaspenterprise/${DockerName}:0.${BUILD_ID} service
+        sh '''        cd src/${ServiceName}
+        docker build --tag openvaspenterprise/${DockerName}:0.${BUILD_ID} ../../service
         docker tag openvaspenterprise/${DockerName}:${BUILD_ID} openvaspenterprise/${DockerName}:latest
         docker login -u=$REGISTRY_AUTH_USR -p=$REGISTRY_AUTH_PSW
         docker push openvaspenterprise/${DockerName}:0.${BUILD_ID}
