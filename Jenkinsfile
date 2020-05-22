@@ -15,14 +15,14 @@ pipeline {
 
     stage('Dotnet Publish') {
       steps {
-        sh 'dotnet publish src/${ServiceName}/${ServiceName}.csproj --configuration Release --output /service --no-restore'
+        sh 'dotnet publish src/${ServiceName}/${ServiceName}.csproj --configuration Release --output service --no-restore'
       }
     }
 
     stage('Docker Build') {
       steps {
         sh '''
-        docker build --tag openvaspenterprise/${DockerName}:0.${BUILD_ID} /service
+        docker build --tag openvaspenterprise/${DockerName}:0.${BUILD_ID} service
         docker tag openvaspenterprise/${DockerName}:${BUILD_ID} openvaspenterprise/${DockerName}:latest
         docker login -u=$REGISTRY_AUTH_USR -p=$REGISTRY_AUTH_PSW
         docker push openvaspenterprise/${DockerName}:0.${BUILD_ID}
