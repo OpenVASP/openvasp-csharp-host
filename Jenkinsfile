@@ -3,9 +3,7 @@ pipeline {
   stages {
     stage('Dotnet Build') {
       steps {
-        sh '''
-        dotnet restore src/${ServiceName}/${ServiceName}.csproj
-        dotnet build --configuration Release --no-restore src/${ServiceName}/${ServiceName}.csproj'''
+        sh 'dotnet build --configuration Release src/${ServiceName}/${ServiceName}.csproj'
       }
     }
 
