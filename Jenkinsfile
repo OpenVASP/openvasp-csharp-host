@@ -3,8 +3,9 @@ pipeline {
   stages {
     stage('Dotnet Build') {
       steps {
-        sh '''dotnet restore src/${ServiceName}/${ServiceName}.csproj
-dotnet build --configuration Release --no-restore src/${ServiceName}/${ServiceName}.csproj'''
+        sh '''
+        dotnet restore src/${ServiceName}/${ServiceName}.csproj
+        dotnet build --configuration Release --no-restore src/${ServiceName}/${ServiceName}.csproj'''
       }
     }
 
@@ -21,8 +22,7 @@ dotnet build --configuration Release --no-restore src/${ServiceName}/${ServiceNa
         docker tag openvaspenterprise/${DockerName}:${BUILD_ID} openvaspenterprise/${DockerName}:latest
         docker login -u=$REGISTRY_AUTH_USR -p=$REGISTRY_AUTH_PSW
         docker push openvaspenterprise/${DockerName}:0.${BUILD_ID}
-        docker push openvaspenterprise/${DockerName}:latest
-'''
+        docker push openvaspenterprise/${DockerName}:latest'''
       }
     }
 
