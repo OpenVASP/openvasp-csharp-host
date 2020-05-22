@@ -20,11 +20,7 @@ namespace OpenVASP.Host.Validation
             RuleFor(x => x)
                 .Must(x =>
                     x.OriginatorPlaceOfBirth != null
-                    && (x.OriginatorNaturalPersonIds == null || x.OriginatorNaturalPersonIds.Length == 0)
-                    && (x.OriginatorJuridicalPersonIds == null || x.OriginatorJuridicalPersonIds.Length == 0)
-                    && string.IsNullOrWhiteSpace(x.OriginatorBic)
-                    || x.OriginatorNaturalPersonIds != null && x.OriginatorNaturalPersonIds.Length > 0
-                    && x.OriginatorPlaceOfBirth == null
+                    && x.OriginatorNaturalPersonIds != null && x.OriginatorNaturalPersonIds.Length > 0
                     && (x.OriginatorJuridicalPersonIds == null || x.OriginatorJuridicalPersonIds.Length == 0)
                     && string.IsNullOrWhiteSpace(x.OriginatorBic)
                     || x.OriginatorJuridicalPersonIds != null && x.OriginatorJuridicalPersonIds.Length > 0
