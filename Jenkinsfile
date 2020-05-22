@@ -19,7 +19,7 @@ pipeline {
       steps {
         sh '''
         docker build --tag openvaspenterprise/${DockerName}:0.${BUILD_ID} ./docker/service
-        docker tag openvaspenterprise/${DockerName}:${BUILD_ID} openvaspenterprise/${DockerName}:latest
+        docker tag openvaspenterprise/${DockerName}:0.${BUILD_ID} openvaspenterprise/${DockerName}:latest
         docker login -u=$REGISTRY_AUTH_USR -p=$REGISTRY_AUTH_PSW
         docker push openvaspenterprise/${DockerName}:0.${BUILD_ID}
         docker push openvaspenterprise/${DockerName}:latest'''
