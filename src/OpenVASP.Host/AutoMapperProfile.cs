@@ -13,6 +13,7 @@ namespace OpenVASP.Host
                 .ForMember(e => e.Id, opt => opt.MapFrom(c => Guid.NewGuid()))
                 .ForMember(e => e.TransactionType, opt => opt.MapFrom(c => c.Type.ToString()))
                 .ForMember(e => e.Asset, opt => opt.MapFrom(c => c.Asset.ToString()))
+                .ForMember(e => e.CounterPartyVaspName, opt => opt.MapFrom(c => c.CounterPartyVasp == null ? null : c.CounterPartyVasp.Name))
                 .ForMember(
                     e => e.OriginatorPostalAddressStreet,
                     opt => opt.MapFrom(c => c.OriginatorPostalAddress == null ? null : c.OriginatorPostalAddress.Street))
@@ -40,7 +41,6 @@ namespace OpenVASP.Host
                 .ForMember(
                     e => e.OriginatorPlaceOfBirthDate,
                     opt => opt.MapFrom(c => c.OriginatorPlaceOfBirth == null ? default : c.OriginatorPlaceOfBirth.Date))
-                .ForMember(e => e.Status, opt => opt.MapFrom(c => c.Status.ToString()))
                 .ForMember(e => e.Status, opt => opt.MapFrom(c => c.Status.ToString()));
         }
     }

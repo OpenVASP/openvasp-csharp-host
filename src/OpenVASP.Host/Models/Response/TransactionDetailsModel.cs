@@ -20,6 +20,7 @@ namespace OpenVASP.Host.Models.Response
         public DateTime OriginatorPlaceOfBirthDate { set; get; }
         public string OriginatorFullName { set; get; }
         public string OriginatorVaan { set; get; }
+        public string CounterPartyVaspName { get; set; }
         public string BeneficiaryFullName { set; get; }
         public string BeneficiaryVaan { set; get; }
         public DateTime CreationDateTime { set; get; }
