@@ -9,7 +9,7 @@ pipeline {
 
     stage('Dotnet Build') {
       steps {
-        sh 'dotnet build --configuration Release --no-restore ${RepoName}.sln'
+        sh 'dotnet build --configuration Release --no-restore src/${ServiceName}/${ServiceName}.csproj -o /app/build'
       }
     }
 
