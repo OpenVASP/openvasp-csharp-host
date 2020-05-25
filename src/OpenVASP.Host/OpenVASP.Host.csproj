@@ -24,9 +24,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\OpenVASP.Host.Persistence.Abstraction\OpenVASP.Host.Persistence.Abstraction.csproj" />
     <ProjectReference Include="..\OpenVASP.Host.Persistence.Implementation\OpenVASP.Host.Persistence.Implementation.csproj" />
     <ProjectReference Include="..\OpenVASP.Host.Core\OpenVASP.Host.Core.csproj" />
+    <ProjectReference Include="..\OpenVASP.Host.Services\OpenVASP.Host.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>

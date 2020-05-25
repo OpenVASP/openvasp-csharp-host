@@ -71,6 +71,12 @@
             <param name="transactionHash">The (blockchain) transaction hash.</param>
             <returns>The updated transaction.</returns>
         </member>
+        <member name="M:OpenVASP.Host.Controllers.VaspCodesController.GetAutoConfirmedVaspCodesAsync">
+            <summary>
+            Get all outgoing transactions for the given host.
+            </summary>
+            <returns>A list of outgoing transactions.</returns>
+        </member>
         <member name="T:OpenVASP.Host.Models.PlaceOfBirthModel">
             <summary>
             Represents place of birth of the originator.
@@ -164,16 +170,6 @@
         <member name="P:OpenVASP.Host.Models.Request.CreateOutgoingTransactionRequestModel.Amount">
             <summary>
             The amount to transfer.
-            </summary>
-        </member>
-        <member name="T:OpenVASP.Host.Services.TransactionsManager">
-            <summary>
-            Transactions manager
-            </summary>
-        </member>
-        <member name="M:OpenVASP.Host.Services.TransactionsManager.#ctor(OpenVASP.Messaging.Messages.Entities.VaspCode,System.String,System.String,OpenVASP.CSharpClient.Interfaces.IEthereumRpc,OpenVASP.CSharpClient.Interfaces.ISignService,OpenVASP.CSharpClient.Interfaces.IEnsProvider,OpenVASP.CSharpClient.Interfaces.ITransportClient,OpenVASP.Host.Core.Services.ITransactionDataService,OpenVASP.Host.Persistence.Abstraction.ISessionsRepository,OpenVASP.Host.Persistence.Abstraction.ITransactionsRepository,OpenVASP.Messaging.Messages.Entities.VaspInformation,Microsoft.Extensions.Logging.ILoggerFactory)">
-            <summary>
-            C-tor
             </summary>
         </member>
     </members>
