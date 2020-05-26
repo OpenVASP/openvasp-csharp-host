@@ -41,7 +41,7 @@ fi'''
 
         stage('Ingress Check') {
           steps {
-            sh '''Ingress=$(cat kubernetes/Ingress.yaml | grep name |awk \\\'{print $2}\\\')
+            sh '''Ingress=$(cat kubernetesiIngress.yaml | grep name |awk \\\'{print $2}\\\')
 Namespace=$(cat kubernetes/namespace.yaml | grep name |awk \\\'{print $2}\\\'
 ING=$(kubectl --kubeconfig=/kube/dev get Ingress "$Ingress" $Namespace" -o jsonpath={.metadata.name})
 if [ $ING ]; then
