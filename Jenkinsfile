@@ -28,7 +28,14 @@ pipeline {
       parallel {
         stage('Namespace Check') {
           steps {
-            sh 'kubectl --kubeconfig=/kube/dev get nodes'
+            sh '''Namespace=$(cat kubernetes/namespace.yaml | grep name |awk \'{print $2}\')
+NSK=$(kubectl --kubeconfig=/kube/dev get namespace "$Namespace" -o jsonpath={.metadata.name})
+if [ $NSK ]; then
+echo  Namsespace "$NSK" Exists
+echo  Keeping without changes
+else
+echo no Namespace $NSK in cluster found - creating
+fi'''
           }
         }
 
