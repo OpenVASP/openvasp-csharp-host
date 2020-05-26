@@ -80,20 +80,12 @@ namespace OpenVASP.Host.Controllers
         {
             if (!ModelState.IsValid)
                 return ValidationProblem(ModelState);
-
-            VirtualAssetType asset;
-            switch (model.Asset)
+            var asset = model.Asset switch
             {
-                case "ETH":
-                    asset = VirtualAssetType.ETH;
-                    break;
-                case "BTC":
-                    asset = VirtualAssetType.BTC;
-                    break;
-                default:
-                    throw new NotSupportedException($"Asset {model.Asset} not recognized.");
-            }
-
+                "ETH" => VirtualAssetType.ETH,
+                "BTC" => VirtualAssetType.BTC,
+                _ => throw new NotSupportedException($"Asset {model.Asset} not recognized."),
+            };
             PlaceOfBirth placeOfBirth = null;
             if (model.OriginatorPlaceOfBirth != null)
             {
