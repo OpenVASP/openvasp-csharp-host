@@ -23,5 +23,7 @@ namespace OpenVASP.Host
         public JuridicalPersonId[] VaspJuridicalIds { set; get; }
 
         public NaturalPersonId[] VaspNaturalIds { set; get; }
+
+        public string[] AutoConfirmedVaspCodes { get; set; }
     }
 }

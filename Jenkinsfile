@@ -16,25 +16,38 @@ pipeline {
     stage('Docker Build') {
       steps {
         sh '''
-        docker build --tag openvaspenterprise/${DockerName}:0.${BUILD_ID} ./docker/service
-        docker tag openvaspenterprise/${DockerName}:0.${BUILD_ID} openvaspenterprise/${DockerName}:latest
+        docker build --tag openvasporg/${DockerName}:0.${BUILD_ID} ./docker/service
+        docker tag openvasporg/${DockerName}:0.${BUILD_ID} openvasporg/${DockerName}:latest
         docker login -u=$REGISTRY_AUTH_USR -p=$REGISTRY_AUTH_PSW
-        docker push openvaspenterprise/${DockerName}:0.${BUILD_ID}
-        docker push openvaspenterprise/${DockerName}:latest'''
+        docker push openvasporg/${DockerName}:0.${BUILD_ID}
+        docker push openvasporg/${DockerName}:latest'''
       }
     }
 
-    stage('Kubernetes Deployment') {
+    stage('Prepare Yamls') {
       parallel {
-        stage('Kubernetes Deployment') {
+        stage('Namespace Check') {
           steps {
-            sh 'kubectl --kubeconfig=/kube/dev get nodes'
+            sh '''Namespace=$(cat kubernetes/namespace.yaml | grep name |awk \'{print $2}\')
+NSK=$(kubectl --kubeconfig=/kube/dev get namespace "$Namespace" -o jsonpath={.metadata.name})
+if [ $NSK ]; then
+echo  Namsespace "$NSK" Exists
+echo  Keeping without changes
+else
+echo no Namespace $NSK in cluster found - creating
+fi'''
           }
         }
 
         stage('Ingress Check') {
           steps {
             sh 'echo "test"'
+          }
+        }
+
+        stage('Substitute Yamls') {
+          steps {
+            sh 'echo "Test"'
           }
         }
 
@@ -45,7 +58,7 @@ pipeline {
   environment {
     RepoName = 'openvasp-csharp-host'
     ServiceName = 'OpenVASP.Host'
-    DockerName = 'host'
+    DockerName = 'csharp-host'
     REGISTRY_AUTH = credentials('dockerhub')
   }
 }

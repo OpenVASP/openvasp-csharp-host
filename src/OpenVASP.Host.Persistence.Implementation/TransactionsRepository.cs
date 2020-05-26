@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using OpenVASP.Host.Core.Models;
-using OpenVASP.Host.Persistence.Abstraction;
+using OpenVASP.Host.Core.Repositories;
 
 namespace OpenVASP.Host.Persistence.Implementation
 {

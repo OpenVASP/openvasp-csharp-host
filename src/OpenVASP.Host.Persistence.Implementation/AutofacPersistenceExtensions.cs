@@ -1,5 +1,5 @@
 using Autofac;
-using OpenVASP.Host.Persistence.Abstraction;
+using OpenVASP.Host.Core.Repositories;
 
 namespace OpenVASP.Host.Persistence.Implementation
 {

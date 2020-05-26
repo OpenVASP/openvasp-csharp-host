@@ -5,11 +5,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\OpenVASP.Host.Persistence.Abstraction\OpenVASP.Host.Persistence.Abstraction.csproj" />
+      <PackageReference Include="Autofac" Version="5.0.0" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Autofac" Version="5.0.0" />
+      <ProjectReference Include="..\OpenVASP.Host.Core\OpenVASP.Host.Core.csproj" />
     </ItemGroup>
 
 </Project>
