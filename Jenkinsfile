@@ -16,17 +16,17 @@ pipeline {
     stage('Docker Build') {
       steps {
         sh '''
-        docker build --tag openvaspenterprise/${DockerName}:0.${BUILD_ID} ./docker/service
-        docker tag openvaspenterprise/${DockerName}:0.${BUILD_ID} openvaspenterprise/${DockerName}:latest
+        docker build --tag openvasporg/${DockerName}:0.${BUILD_ID} ./docker/service
+        docker tag openvasporg/${DockerName}:0.${BUILD_ID} openvasporg/${DockerName}:latest
         docker login -u=$REGISTRY_AUTH_USR -p=$REGISTRY_AUTH_PSW
-        docker push openvaspenterprise/${DockerName}:0.${BUILD_ID}
-        docker push openvaspenterprise/${DockerName}:latest'''
+        docker push openvasporg/${DockerName}:0.${BUILD_ID}
+        docker push openvasporg/${DockerName}:latest'''
       }
     }
 
-    stage('Kubernetes Deployment') {
+    stage('Prepare Yamls') {
       parallel {
-        stage('Kubernetes Deployment') {
+        stage('Namespace Check') {
           steps {
             sh 'kubectl --kubeconfig=/kube/dev get nodes'
           }
@@ -38,6 +38,12 @@ pipeline {
           }
         }
 
+        stage('Substitute Yamls') {
+          steps {
+            sh 'echo "Test"'
+          }
+        }
+
       }
     }
 
@@ -45,7 +51,7 @@ pipeline {
   environment {
     RepoName = 'openvasp-csharp-host'
     ServiceName = 'OpenVASP.Host'
-    DockerName = 'host'
+    DockerName = 'csharp-host'
     REGISTRY_AUTH = credentials('dockerhub')
   }
 }
