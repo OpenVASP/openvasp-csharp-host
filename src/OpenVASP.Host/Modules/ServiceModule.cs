@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Autofac;
 using Nethereum.Web3;
 using OpenVASP.CSharpClient;
@@ -86,8 +87,13 @@ namespace OpenVASP.Host.Modules
                 .WithParameter("handshakePrivateKeyHex", _appSettings.HandshakePrivateKeyHex)
                 .WithParameter("signaturePrivateKeyHex", _appSettings.SignaturePrivateKeyHex);
 
+            builder.RegisterType<VaspCodeManager>()
+                .As<IVaspCodeManager>()
+                .WithParameter(TypedParameter.From((IEnumerable<string>)_appSettings.AutoConfirmedVaspCodes))
+                .SingleInstance();
+
             builder.RegisterInMemoryRepositories();
-            
+
             base.Load(builder);
         }
     }

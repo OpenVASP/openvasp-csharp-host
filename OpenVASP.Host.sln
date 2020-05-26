@@ -5,11 +5,11 @@ VisualStudioVersion = 16.0.30002.166
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenVASP.Host", "src\OpenVASP.Host\OpenVASP.Host.csproj", "{D7E2B66E-679F-403F-BC55-907E5D9F18C6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenVASP.Host.Core", "src\OpenVASP.Host.Core\OpenVASP.Host.Core.csproj", "{97A5FB47-2992-48DF-9C18-BE17FB8220CE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenVASP.Host.Core", "src\OpenVASP.Host.Core\OpenVASP.Host.Core.csproj", "{97A5FB47-2992-48DF-9C18-BE17FB8220CE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenVASP.Host.Persistence.Abstraction", "src\OpenVASP.Host.Persistence.Abstraction\OpenVASP.Host.Persistence.Abstraction.csproj", "{CD7649BF-DD6A-4A20-9957-DF67CA6D7663}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenVASP.Host.Persistence.Implementation", "src\OpenVASP.Host.Persistence.Implementation\OpenVASP.Host.Persistence.Implementation.csproj", "{F9BCE3D8-2AE0-4322-B704-CDA02FE0EBED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenVASP.Host.Persistence.Implementation", "src\OpenVASP.Host.Persistence.Implementation\OpenVASP.Host.Persistence.Implementation.csproj", "{F9BCE3D8-2AE0-4322-B704-CDA02FE0EBED}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenVASP.Host.Services", "src\OpenVASP.Host.Services\OpenVASP.Host.Services.csproj", "{6A4BC669-3258-480D-99A5-2595467910AB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,18 +45,6 @@ Global
 		{97A5FB47-2992-48DF-9C18-BE17FB8220CE}.Release|x64.Build.0 = Release|Any CPU
 		{97A5FB47-2992-48DF-9C18-BE17FB8220CE}.Release|x86.ActiveCfg = Release|Any CPU
 		{97A5FB47-2992-48DF-9C18-BE17FB8220CE}.Release|x86.Build.0 = Release|Any CPU
-		{CD7649BF-DD6A-4A20-9957-DF67CA6D7663}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CD7649BF-DD6A-4A20-9957-DF67CA6D7663}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CD7649BF-DD6A-4A20-9957-DF67CA6D7663}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{CD7649BF-DD6A-4A20-9957-DF67CA6D7663}.Debug|x64.Build.0 = Debug|Any CPU
-		{CD7649BF-DD6A-4A20-9957-DF67CA6D7663}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{CD7649BF-DD6A-4A20-9957-DF67CA6D7663}.Debug|x86.Build.0 = Debug|Any CPU
-		{CD7649BF-DD6A-4A20-9957-DF67CA6D7663}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CD7649BF-DD6A-4A20-9957-DF67CA6D7663}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CD7649BF-DD6A-4A20-9957-DF67CA6D7663}.Release|x64.ActiveCfg = Release|Any CPU
-		{CD7649BF-DD6A-4A20-9957-DF67CA6D7663}.Release|x64.Build.0 = Release|Any CPU
-		{CD7649BF-DD6A-4A20-9957-DF67CA6D7663}.Release|x86.ActiveCfg = Release|Any CPU
-		{CD7649BF-DD6A-4A20-9957-DF67CA6D7663}.Release|x86.Build.0 = Release|Any CPU
 		{F9BCE3D8-2AE0-4322-B704-CDA02FE0EBED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F9BCE3D8-2AE0-4322-B704-CDA02FE0EBED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9BCE3D8-2AE0-4322-B704-CDA02FE0EBED}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -69,6 +57,18 @@ Global
 		{F9BCE3D8-2AE0-4322-B704-CDA02FE0EBED}.Release|x64.Build.0 = Release|Any CPU
 		{F9BCE3D8-2AE0-4322-B704-CDA02FE0EBED}.Release|x86.ActiveCfg = Release|Any CPU
 		{F9BCE3D8-2AE0-4322-B704-CDA02FE0EBED}.Release|x86.Build.0 = Release|Any CPU
+		{6A4BC669-3258-480D-99A5-2595467910AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A4BC669-3258-480D-99A5-2595467910AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A4BC669-3258-480D-99A5-2595467910AB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6A4BC669-3258-480D-99A5-2595467910AB}.Debug|x64.Build.0 = Debug|Any CPU
+		{6A4BC669-3258-480D-99A5-2595467910AB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6A4BC669-3258-480D-99A5-2595467910AB}.Debug|x86.Build.0 = Debug|Any CPU
+		{6A4BC669-3258-480D-99A5-2595467910AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A4BC669-3258-480D-99A5-2595467910AB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A4BC669-3258-480D-99A5-2595467910AB}.Release|x64.ActiveCfg = Release|Any CPU
+		{6A4BC669-3258-480D-99A5-2595467910AB}.Release|x64.Build.0 = Release|Any CPU
+		{6A4BC669-3258-480D-99A5-2595467910AB}.Release|x86.ActiveCfg = Release|Any CPU
+		{6A4BC669-3258-480D-99A5-2595467910AB}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
