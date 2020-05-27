@@ -55,7 +55,7 @@ pipeline {
 
         stage('Substitute Yamls') {
           steps {
-            sh '''echo $Image
+            sh '''Image=${DockerName}:0.${BUILD_ID}
 $Image'''
           }
         }
@@ -69,6 +69,5 @@ $Image'''
     ServiceName = 'OpenVASP.Host'
     DockerName = 'csharp-host'
     REGISTRY_AUTH = credentials('dockerhub')
-    Image = '${DockerName}:0.${BUILD_ID}'
   }
 }
