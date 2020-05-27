@@ -55,7 +55,8 @@ pipeline {
 
         stage('Substitute Yamls') {
           steps {
-            sh 'echo Image'
+            sh '''echo $Image
+$Image'''
           }
         }
 
