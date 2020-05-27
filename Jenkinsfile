@@ -55,7 +55,8 @@ pipeline {
 
         stage('Substitute Yamls') {
           steps {
-            sh 'echo "Test"'
+            sh '''Image=$(${DockerName}:0.${BUILD_ID})
+echo $Image'''
           }
         }
 
