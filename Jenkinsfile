@@ -32,7 +32,6 @@ pipeline {
 NSK=$(kubectl --kubeconfig=/kube/dev get namespace "$Namespace" -o jsonpath={.metadata.name})
 if [ $NSK ]; then
 echo  Namsespace "$NSK" Exists
-echo  Keeping without changes
 else
 echo no Namespace $NSK in cluster found - creating
 fi'''
@@ -45,10 +44,9 @@ fi'''
 Namespace=$(cat kubernetes/namespace.yaml | grep name |awk \'{print $2}\')
 ING=$(kubectl --kubeconfig=/kube/dev get ingress $Ingress -n "$Namespace" -o jsonpath={.metadata.name})
 if [ $ING ]; then
-echo  Ingress "$ING" Exists
-echo  Keeping without changes
+echo  Ingress "$Ingress" Exists
 else
-echo no Ingress $ING in cluster found - creating
+echo no Ingress $Ingress in cluster found - creating
 fi'''
           }
         }
