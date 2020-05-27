@@ -41,16 +41,15 @@ fi'''
 
         stage('Ingress Check') {
           steps {
-            sh '''Ingress=$(cat kubernetes/ingress.yaml | grep name |awk \\\'{print $2}\\\')
-Namespace=$(cat kubernetes/namespace.yaml | grep name |awk \\\'{print $2}\\\'
+            sh '''Ingress=$(cat kubernetes/ingress.yaml | grep name |awk \'{print $2}\')
+Namespace=$(cat kubernetes/namespace.yaml | grep name |awk \'{print $2}\'
 ING=$(kubectl --kubeconfig=/kube/dev get Ingress "$Ingress" $Namespace" -o jsonpath={.metadata.name})
 if [ $ING ]; then
 echo  Ingress "$ING" Exists
 echo  Keeping without changes
 else
 echo no Ingress $ING in cluster found - creating
-fi
-'''
+fi'''
           }
         }
 
