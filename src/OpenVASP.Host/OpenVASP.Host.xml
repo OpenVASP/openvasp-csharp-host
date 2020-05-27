@@ -73,9 +73,9 @@
         </member>
         <member name="M:OpenVASP.Host.Controllers.VaspCodesController.GetAutoConfirmedVaspCodesAsync">
             <summary>
-            Get all outgoing transactions for the given host.
+            Get a list of vasp codes that are autoconfirmed.
             </summary>
-            <returns>A list of outgoing transactions.</returns>
+            <returns>A list of autoconfirmed vasp codes.</returns>
         </member>
         <member name="T:OpenVASP.Host.Models.PlaceOfBirthModel">
             <summary>
