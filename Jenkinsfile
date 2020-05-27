@@ -56,7 +56,9 @@ pipeline {
         stage('Substitute Yamls') {
           steps {
             sh '''Image=$(${DockerName}:0.${BUILD_ID})
-echo $Image'''
+sed -i -e \'s/$dockerImage/$Image/g\' deployment.yaml
+cat deployment.yaml
+'''
           }
         }
 
