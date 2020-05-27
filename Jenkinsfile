@@ -56,7 +56,9 @@ pipeline {
         stage('Substitute Yamls') {
           steps {
             sh '''Image=${DockerName}:0.${BUILD_ID}
-$Image'''
+sed -i -e \'s/$dockerImage/$Image/g\' kubernetes/deployment.yaml
+cat kubernetes/deployment.yaml
+'''
           }
         }
 
