@@ -12,6 +12,8 @@ namespace OpenVASP.Host.Core.Services
 
         Task<List<Transaction>> GetIncomingTransactionsAsync();
 
+        Task<Transaction> GetAsync(string id);
+
         Task SendSessionReplyAsync(string id, SessionReplyMessage.SessionReplyMessageCode code);
 
         Task<Transaction> RegisterOutgoingTransactionAsync(

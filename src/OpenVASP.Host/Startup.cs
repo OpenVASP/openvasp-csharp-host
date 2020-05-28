@@ -89,7 +89,13 @@ namespace OpenVASP.Host
                     : new PlaceOfBirth(
                         DateTime.Parse(Configuration["AppSettings:VaspPlaceOfBirth:Date"]),
                         Configuration["AppSettings:VaspPlaceOfBirth:City"],
-                        Country.List[Configuration["AppSettings:VaspPlaceOfBirth:CountryCode"]])
+                        Country.List[Configuration["AppSettings:VaspPlaceOfBirth:CountryCode"]]),
+                AutoConfirmedVaspCodes = Configuration.GetSection("AppSettings:AutoConfirmedVaspCodes").GetChildren().Count() != 0
+                    ? Configuration.GetSection("AppSettings:AutoConfirmedVaspCodes")
+                        .GetChildren()
+                        .Select(x => x.Value)
+                        .ToArray()
+                    : null,
             };
 
             if (string.IsNullOrWhiteSpace(_appSettings.VaspBic))

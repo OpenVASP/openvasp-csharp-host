@@ -10,10 +10,11 @@ namespace OpenVASP.Host.Services
 
         public VaspCodeManager(IEnumerable<string> vaspCodes)
         {
-            foreach (var vaspCode in vaspCodes)
-            {
-                _vaspCodes.Add(vaspCode.ToLower());
-            }
+            if (vaspCodes != null)
+                foreach (var vaspCode in vaspCodes)
+                {
+                    _vaspCodes.Add(vaspCode.ToLower());
+                }
         }
 
         public List<string> GetAutoConfirmedVaspCodes()
