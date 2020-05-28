@@ -117,7 +117,7 @@ namespace OpenVASP.Host.Controllers
             if (string.IsNullOrWhiteSpace(id))
                 validationErrorsDict.Add(nameof(id), new[] { $"{nameof(id)} is required" });
 
-            if (string.IsNullOrWhiteSpace(destinationAddress))
+            if (string.IsNullOrWhiteSpace(destinationAddress) && code == TransferReplyMessage.TransferReplyMessageCode.TransferAccepted)
                 validationErrorsDict.Add(nameof(destinationAddress), new[] { $"{nameof(destinationAddress)} is required" });
 
             if (validationErrorsDict.Count > 0)
