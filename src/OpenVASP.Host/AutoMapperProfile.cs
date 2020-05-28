@@ -29,13 +29,13 @@ namespace OpenVASP.Host
                     e => e.OriginatorPostalAddressTown,
                     opt => opt.MapFrom(c => c.OriginatorPostalAddress == null ? null : c.OriginatorPostalAddress.Town))
                 .ForMember(
-                    e => e.OriginatorPostalAddressCountry,
+                    e => e.OriginatorPostalAddressCountryIso2Code,
                     opt => opt.MapFrom(c => c.OriginatorPostalAddress == null ? null : c.OriginatorPostalAddress.Country))
                 .ForMember(
                     e => e.OriginatorPlaceOfBirthTown,
                     opt => opt.MapFrom(c => c.OriginatorPlaceOfBirth == null ? null : c.OriginatorPlaceOfBirth.Town))
                 .ForMember(
-                    e => e.OriginatorPlaceOfBirthCountry,
+                    e => e.OriginatorPlaceOfBirthCountryIso2Code,
                     opt => opt.MapFrom(c => c.OriginatorPlaceOfBirth == null ? null : c.OriginatorPlaceOfBirth.Country))
                 .ForMember(
                     e => e.OriginatorPlaceOfBirthDate,
