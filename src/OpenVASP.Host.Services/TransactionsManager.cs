@@ -104,6 +104,11 @@ namespace OpenVASP.Host.Services
         {
             var transaction = await _transactionsRepository.GetAsync(id);
 
+            if (transaction == null)
+            {
+                throw new NullReferenceException();
+            }
+
             if (transaction.Status != TransactionStatus.SessionRequested)
                 return; //todo: handle properly
 
@@ -131,6 +136,11 @@ namespace OpenVASP.Host.Services
             TransferReplyMessage.TransferReplyMessageCode code)
         {
             var transaction = await _transactionsRepository.GetAsync(id);
+
+            if (transaction == null)
+            {
+                throw new NullReferenceException();
+            }
 
             if (transaction.Status != TransactionStatus.TransferRequested)
                 return; //todo: handle this case.
@@ -165,6 +175,11 @@ namespace OpenVASP.Host.Services
         {
             var transaction = await _transactionsRepository.GetAsync(id);
 
+            if (transaction == null)
+            {
+                throw new NullReferenceException();
+            }
+
             if (transaction.Status != TransactionStatus.TransferAllowed)
                 return; //todo: handle this case.
 
@@ -183,6 +198,11 @@ namespace OpenVASP.Host.Services
         public async Task SendTransferConfirmAsync(string id)
         {
             var transaction = await _transactionsRepository.GetAsync(id);
+
+            if (transaction == null)
+            {
+                throw new NullReferenceException();
+            }
 
             if (transaction.Status != TransactionStatus.TransferDispatched)
                 return; //todo: handle this case.
@@ -208,6 +228,11 @@ namespace OpenVASP.Host.Services
         public async Task<List<Transaction>> GetIncomingTransactionsAsync()
         {
             return await _transactionsRepository.GetAsync(TransactionType.Incoming);
+        }
+
+        public async Task<Transaction> GetAsync(string id)
+        {
+            return await _transactionsRepository.GetAsync(id);
         }
 
         private async Task BeneficiarySessionCreatedAsync(BeneficiarySessionCreatedEvent evt)

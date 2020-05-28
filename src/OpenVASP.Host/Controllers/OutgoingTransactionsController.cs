@@ -62,8 +62,12 @@ namespace OpenVASP.Host.Controllers
                             { nameof(id), new [] { $"{nameof(id)} is required" } }
                         }));
 
-            var transaction = (await _transactionsManager.GetOutgoingTransactionsAsync())
-                .SingleOrDefault(x => x.Id == id);
+            var transaction = await _transactionsManager.GetAsync(id);
+
+            if (transaction == null)
+            {
+                return NotFound();
+            }
 
             return Ok(_mapper.Map<TransactionDetailsModel>(transaction));
         }
@@ -170,9 +174,16 @@ namespace OpenVASP.Host.Controllers
             if (validationErrorsDict.Count > 0)
                 return ValidationProblem(new ValidationProblemDetails(validationErrorsDict));
 
-            await _transactionsManager.SendTransferDispatchAsync(id, sendingAddress, transactionHash);
+            try
+            {
+                await _transactionsManager.SendTransferDispatchAsync(id, sendingAddress, transactionHash);
+            }
+            catch (NullReferenceException)
+            {
+                return NotFound();
+            }
 
-            var transaction = await GetOutgoingTransactionAsync(id);
+            var transaction = await _transactionsManager.GetAsync(id);
 
             return Ok(_mapper.Map<TransactionDetailsModel>(transaction));
         }

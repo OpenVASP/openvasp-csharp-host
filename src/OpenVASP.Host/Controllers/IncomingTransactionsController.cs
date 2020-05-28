@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -54,8 +55,12 @@ namespace OpenVASP.Host.Controllers
                             { nameof(id), new [] { $"{nameof(id)} is required" } }
                         }));
 
-            var transaction = (await _transactionsManager.GetIncomingTransactionsAsync())
-                .SingleOrDefault(x => x.Id == id);
+            var transaction = await _transactionsManager.GetAsync(id);
+
+            if (transaction == null)
+            {
+                return NotFound();
+            }
 
             return Ok(_mapper.Map<TransactionDetailsModel>(transaction));
         }
@@ -79,10 +84,16 @@ namespace OpenVASP.Host.Controllers
                         {
                             { nameof(id), new [] { $"{nameof(id)} is required" } }
                         }));
+            try
+            {
+                await _transactionsManager.SendSessionReplyAsync(id, code);
+            }
+            catch (NullReferenceException)
+            {
+                return NotFound();
+            }
 
-            await _transactionsManager.SendSessionReplyAsync(id, code);
-
-            var transaction = await GetIncomingTransactionAsync(id);
+            var transaction = await _transactionsManager.GetAsync(id);
 
             return Ok(_mapper.Map<TransactionDetailsModel>(transaction));
         }
@@ -112,12 +123,19 @@ namespace OpenVASP.Host.Controllers
             if (validationErrorsDict.Count > 0)
                 return ValidationProblem(new ValidationProblemDetails(validationErrorsDict));
 
-            await _transactionsManager.SendTransferReplyAsync(
+            try
+            {
+                await _transactionsManager.SendTransferReplyAsync(
                 id,
                 destinationAddress,
                 code);
+            }
+            catch (NullReferenceException)
+            {
+                return NotFound();
+            }            
 
-            var transaction = await GetIncomingTransactionAsync(id);
+            var transaction = await _transactionsManager.GetAsync(id);
 
             return Ok(_mapper.Map<TransactionDetailsModel>(transaction));
         }
@@ -139,9 +157,16 @@ namespace OpenVASP.Host.Controllers
                             { nameof(id), new [] { $"{nameof(id)} is required" } }
                         }));
 
-            await _transactionsManager.SendTransferConfirmAsync(id);
+            try
+            {
+                await _transactionsManager.SendTransferConfirmAsync(id);
+            }
+            catch (NullReferenceException)
+            {
+                return NotFound();
+            }
 
-            var transaction = await GetIncomingTransactionAsync(id);
+            var transaction = await _transactionsManager.GetAsync(id);
 
             return Ok(_mapper.Map<TransactionDetailsModel>(transaction));
         }
