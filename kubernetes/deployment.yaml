@@ -39,18 +39,18 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 80
-        readinessProbe:
-          httpGet:
-            path: /api/isalive
-            port: 80
-          initialDelaySeconds: 60
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /api/isalive
-            port: 80
-          initialDelaySeconds: 60
-          periodSeconds: 20
+#        readinessProbe:
+#          httpGet:
+#            path: /api/isalive
+#            port: 80
+#          initialDelaySeconds: 60
+#          periodSeconds: 10
+#        livenessProbe:
+#          httpGet:
+#            path: /api/isalive
+#            port: 80
+#          initialDelaySeconds: 60
+#          periodSeconds: 20
         resources:
           requests:
             memory: 128Mi
