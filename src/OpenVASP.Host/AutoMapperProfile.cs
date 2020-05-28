@@ -10,7 +10,6 @@ namespace OpenVASP.Host
         public AutoMapperProfile()
         {
             CreateMap<Transaction, TransactionDetailsModel>(MemberList.Destination)
-                .ForMember(e => e.Id, opt => opt.MapFrom(c => Guid.NewGuid()))
                 .ForMember(e => e.TransactionType, opt => opt.MapFrom(c => c.Type.ToString()))
                 .ForMember(e => e.Asset, opt => opt.MapFrom(c => c.Asset.ToString()))
                 .ForMember(e => e.CounterPartyVaspName, opt => opt.MapFrom(c => c.CounterPartyVasp == null ? null : c.CounterPartyVasp.Name))
