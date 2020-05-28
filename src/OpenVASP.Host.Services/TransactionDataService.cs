@@ -71,12 +71,17 @@ namespace OpenVASP.Host.Services
                 PostCode = message.Originator.PostalAddress.PostCode,
                 Town = message.Originator.PostalAddress.TownName
             };
-            transaction.OriginatorPlaceOfBirth = new PlaceOfBirth
+
+            if (message.Originator.PlaceOfBirth != null)
             {
-                Country = message.Originator.PlaceOfBirth.CountryOfBirth,
-                Date = message.Originator.PlaceOfBirth.DateOfBirth,
-                Town = message.Originator.PlaceOfBirth.CityOfBirth
-            };
+                transaction.OriginatorPlaceOfBirth = new PlaceOfBirth
+                {
+                    Country = message.Originator.PlaceOfBirth.CountryOfBirth,
+                    Date = message.Originator.PlaceOfBirth.DateOfBirth,
+                    Town = message.Originator.PlaceOfBirth.CityOfBirth
+                };
+            }
+
             transaction.OriginatorJuridicalPersonIds = message.Originator.JuridicalPersonId?.Select(
                     x => new JuridicalPersonId(x.Identifier, x.IdentificationType, x.IssuingCountry,
                         x.NonStateIssuer))
@@ -106,10 +111,12 @@ namespace OpenVASP.Host.Services
                     transaction.OriginatorPostalAddress.PostCode,
                     transaction.OriginatorPostalAddress.Town,
                     transaction.OriginatorPostalAddress.Country),
-                new Messaging.Messages.Entities.PlaceOfBirth(
-                    transaction.OriginatorPlaceOfBirth.Date,
-                    transaction.OriginatorPlaceOfBirth.Town,
-                    transaction.OriginatorPlaceOfBirth.Country),
+                transaction.OriginatorPlaceOfBirth != null
+                    ? new Messaging.Messages.Entities.PlaceOfBirth(
+                        transaction.OriginatorPlaceOfBirth.Date,
+                        transaction.OriginatorPlaceOfBirth.Town,
+                        transaction.OriginatorPlaceOfBirth.Country)
+                    : null,
                 transaction.OriginatorNaturalPersonIds,
                 transaction.OriginatorJuridicalPersonIds,
                 transaction.OriginatorBic);
