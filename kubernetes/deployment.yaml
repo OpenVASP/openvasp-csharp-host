@@ -36,8 +36,6 @@ spec:
              - /bin/sh
              - -c
              - "cp /config/appsettings.json /app/appsettings.json"
-        command: [ "sleep" ]
-        args: [ "infinity" ]
         imagePullPolicy: Always
         ports:
         - containerPort: 80
