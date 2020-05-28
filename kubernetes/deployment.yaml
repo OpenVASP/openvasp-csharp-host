@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    description: Lykke-Service-Csharp-Host
+  labels:
+    app: csharp-host
+    tier: Service
+  name: csharp-host
+  namespace: services
+spec:
+  revisionHistoryLimit: 1
+  minReadySeconds: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  replicas: 1
+  selector:
+    matchLabels:
+      app: csharp-host
+  template:
+    metadata:
+      labels:
+        app: csharp-host
+      name: csharp-host
+    spec:
+      containers:
+      - name: csharp-host
+        image: openvasporg/$dockerImage
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /api/isalive
+            port: 80
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/isalive
+            port: 80
+          initialDelaySeconds: 60
+          periodSeconds: 20
+        resources:
+          requests:
+            memory: 128Mi 
+            cpu: 40m 
+          limits:
+            memory: 256Mi 
+            cpu: 100m 
+        env:
+        - name: BuildNumber
+          value: '$version'
+        - name: SettingsUrl
+          value: '$ConnectionString'
+        - name: ENV_INFO
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+
