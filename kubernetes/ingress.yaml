@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: csharp-host
-  namespace: services
+  namespace: org-services
   annotations:
     kubernetes.io/ingress.class: "nginx"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
@@ -16,5 +16,5 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: echo1
+          serviceName: csharp-host
           servicePort: 80

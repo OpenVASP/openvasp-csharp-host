@@ -5,7 +5,7 @@ metadata:
     app: csharp-host
     tier: Service
   name: csharp-host
-  namespace: services
+  namespace: org-services
 spec:
   ports:
   - name: http
