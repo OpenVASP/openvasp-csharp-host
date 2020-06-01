@@ -40,8 +40,8 @@ pipeline {
             if [ $NSK ]; then
             echo  Namsespace "$Namespace" Exists
             else
-            echo no Namespace $Namespace in cluster found - creating
             kubectl --kubeconfig=/kube/dev apply -f kubernetes/service.yaml
+            echo no Namespace $Namespace in cluster found - creating
             fi'''
           }
         }
