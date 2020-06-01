@@ -72,7 +72,7 @@ spec:
       - name: install
         image: busybox
         command: ["/bin/sh","-c"]
-        args: ["wget --output-document=appsettings.json http://consul-ui.consul.svc.cluster.local/v1/kv/host1/settings?raw; cp appsettings.json /work-dir"]
+        args: ["wget --output-document=appsettings.json http://consul-ui.internal.svc.cluster.local/v1/kv/host-1/settings?raw; cp appsettings.json /work-dir"]
         volumeMounts:
         - name: workdir
           mountPath: "/work-dir"
