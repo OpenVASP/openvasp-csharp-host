@@ -100,9 +100,9 @@ namespace OpenVASP.Host.Services
             return transaction;
         }
 
-        public async Task SendSessionReplyAsync(string id, SessionReplyMessage.SessionReplyMessageCode code)
+        public async Task SendSessionReplyAsync(string txId, SessionReplyMessage.SessionReplyMessageCode code)
         {
-            var transaction = await _transactionsRepository.GetAsync(id);
+            var transaction = await _transactionsRepository.GetAsync(txId);
 
             if (transaction == null)
             {
@@ -264,6 +264,9 @@ namespace OpenVASP.Host.Services
             transaction.Status = TransactionStatus.SessionRequested;
 
             await _transactionsRepository.UpdateAsync(transaction);
+
+            if (_vaspCodeManager.IsAutoConfirmedVaspCode(transaction.CounterPartyVasp.GetVaspCode()))
+                await SendSessionReplyAsync(transaction.Id, SessionReplyMessage.SessionReplyMessageCode.SessionAccepted);
         }
 
         private async Task SessionReplyMessageReceivedAsync(SessionMessageEvent<SessionReplyMessage> evt)
@@ -345,9 +348,6 @@ namespace OpenVASP.Host.Services
             transaction.Status = TransactionStatus.TransferDispatched;
 
             await _transactionsRepository.UpdateAsync(transaction);
-
-            if (_vaspCodeManager.IsAutoConfirmedVaspCode(transaction.CounterPartyVasp.GetVaspCode()))
-                await SendTransferConfirmAsync(evt.SessionId);
         }
 
         private async Task TransferConfirmationMessageReceivedAsync(SessionMessageEvent<TransferConfirmationMessage> evt)
