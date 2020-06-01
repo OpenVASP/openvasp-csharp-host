@@ -1,6 +1,12 @@
 pipeline {
   agent any
   stages {
+    stage('Dotnet Restore') {
+      steps {
+        sh 'dotnet restore src/${ServiceName}/${ServiceName}.csproj --configfile  src/${ServiceName}/nuget.config'
+      }
+    }
+
     stage('Dotnet Build') {
       steps {
         sh 'dotnet build --configuration Release src/${ServiceName}/${ServiceName}.csproj'

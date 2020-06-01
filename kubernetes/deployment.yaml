@@ -29,35 +29,53 @@ spec:
       containers:
       - name: csharp-host
         image: openvasporg/$dockerImage
+        lifecycle:
+          postStart:
+            exec:
+             command:
+             - /bin/sh
+             - -c
+             - "cp /config/appsettings.json /app/appsettings.json"
         imagePullPolicy: Always
         ports:
         - containerPort: 80
-        readinessProbe:
-          httpGet:
-            path: /api/isalive
-            port: 80
-          initialDelaySeconds: 60
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /api/isalive
-            port: 80
-          initialDelaySeconds: 60
-          periodSeconds: 20
+#        readinessProbe:
+#          httpGet:
+#            path: /api/isalive
+#            port: 80
+#          initialDelaySeconds: 60
+#          periodSeconds: 10
+#        livenessProbe:
+#          httpGet:
+#            path: /api/isalive
+#            port: 80
+#          initialDelaySeconds: 60
+#          periodSeconds: 20
         resources:
           requests:
-            memory: 128Mi 
-            cpu: 40m 
+            memory: 128Mi
+            cpu: 40m
           limits:
-            memory: 256Mi 
-            cpu: 100m 
+            memory: 256Mi
+            cpu: 100m
         env:
         - name: BuildNumber
           value: '$version'
-        - name: SettingsUrl
-          value: '$ConnectionString'
         - name: ENV_INFO
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-
+        volumeMounts:
+        - name: workdir
+          mountPath: /config
+      initContainers:
+      - name: install
+        image: busybox
+        command: ["/bin/sh","-c"]
+        args: ["wget --output-document=appsettings.json http://consul-ui.consul.svc.cluster.local/v1/kv/host1/settings?raw; cp appsettings.json /work-dir"]
+        volumeMounts:
+        - name: workdir
+          mountPath: "/work-dir"
+      volumes:
+      - name: workdir
+        emptyDir: {}
