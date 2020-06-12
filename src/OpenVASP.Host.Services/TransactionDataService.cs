@@ -62,15 +62,18 @@ namespace OpenVASP.Host.Services
 
         public void FillTransactionData(Transaction transaction, TransferRequestMessage message)
         {
-            transaction.OriginatorPostalAddress = new PostalAddress
+            if (message.Originator.PostalAddress != null)
             {
-                Street = message.Originator.PostalAddress.StreetName,
-                AddressLine = message.Originator.PostalAddress.AddressLine,
-                Building = int.Parse(message.Originator.PostalAddress.BuildingNumber),
-                Country = message.Originator.PostalAddress.Country,
-                PostCode = message.Originator.PostalAddress.PostCode,
-                Town = message.Originator.PostalAddress.TownName
-            };
+                transaction.OriginatorPostalAddress = new PostalAddress
+                {
+                    Street = message.Originator.PostalAddress.StreetName,
+                    AddressLine = message.Originator.PostalAddress.AddressLine,
+                    Building = int.Parse(message.Originator.PostalAddress.BuildingNumber),
+                    Country = message.Originator.PostalAddress.Country,
+                    PostCode = message.Originator.PostalAddress.PostCode,
+                    Town = message.Originator.PostalAddress.TownName
+                };
+            }
 
             if (message.Originator.PlaceOfBirth != null)
             {
