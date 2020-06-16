@@ -16,7 +16,7 @@ namespace OpenVASP.Host.Models.Response
         public string OriginatorPostalAddressCountryIso2Code { get; set; }
         public string OriginatorPlaceOfBirthTown { set; get; }
         public string OriginatorPostalAddressStreet { get; set; }
-        public int OriginatorPostalAddressBuilding { get; set; }
+        public string OriginatorPostalAddressBuilding { get; set; }
         public string OriginatorPostalAddressAddressLine { get; set; }
         public string OriginatorFullName { set; get; }
         public string OriginatorVaan { set; get; }
@@ -31,6 +31,7 @@ namespace OpenVASP.Host.Models.Response
         public string Status { set; get; }
         public string DestinationAddress { get; set; }
         public string TransactionHash { get; set; }
+        public string TransactionDateTime { get; set; }
         public string SendingAddress { get; set; }
         public string SessionDeclineCode { set; get; }
         public string TransferDeclineCode { set; get; }

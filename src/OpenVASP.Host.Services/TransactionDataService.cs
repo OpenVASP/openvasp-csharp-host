@@ -68,7 +68,7 @@ namespace OpenVASP.Host.Services
                 {
                     Street = message.Originator.PostalAddress.StreetName,
                     AddressLine = message.Originator.PostalAddress.AddressLine,
-                    Building = int.Parse(message.Originator.PostalAddress.BuildingNumber),
+                    Building = message.Originator.PostalAddress.BuildingNumber,
                     Country = message.Originator.PostalAddress.Country,
                     PostCode = message.Originator.PostalAddress.PostCode,
                     Town = message.Originator.PostalAddress.TownName

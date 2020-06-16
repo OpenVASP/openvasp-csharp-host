@@ -69,7 +69,7 @@ namespace OpenVASP.Host.Validation
                 .WithMessage(x => $"{nameof(x.OriginatorPostalAddress.CountryIso2Code)} must be ISO2 code");
 
                 RuleFor(x => x.OriginatorPostalAddress.Building)
-                .Must(x => x > 0)
+                .NotEmpty()
                 .WithMessage(x => $"{nameof(x.OriginatorPostalAddress.Building)} required");
 
                 RuleFor(x => x.OriginatorPostalAddress.Street)

@@ -17,7 +17,7 @@ namespace OpenVASP.Host.Models
         /// Building number.
         /// </summary>
         [Required]
-        public int Building { get; set; }
+        public string Building { get; set; }
 
         /// <summary>
         /// Address line.

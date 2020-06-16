@@ -26,6 +26,7 @@ namespace OpenVASP.Host.Core.Models
         public string BeneficiaryFullName { set; get; }
         public string BeneficiaryVaan { set; get; }
         public DateTime CreationDateTime { set; get; }
+        public DateTime TransactionDateTime { set; get; }
         
         [JsonConverter(typeof(StringEnumConverter))]
         public TransactionStatus Status { set; get; }
