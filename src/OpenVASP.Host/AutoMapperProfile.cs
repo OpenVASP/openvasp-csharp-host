@@ -18,7 +18,7 @@ namespace OpenVASP.Host
                     opt => opt.MapFrom(c => c.OriginatorPostalAddress == null ? null : c.OriginatorPostalAddress.Street))
                 .ForMember(
                     e => e.OriginatorPostalAddressBuilding,
-                    opt => opt.MapFrom(c => c.OriginatorPostalAddress == null ? 0 : c.OriginatorPostalAddress.Building))
+                    opt => opt.MapFrom(c => c.OriginatorPostalAddress == null ? null : c.OriginatorPostalAddress.Building))
                 .ForMember(
                     e => e.OriginatorPostalAddressAddressLine,
                     opt => opt.MapFrom(c => c.OriginatorPostalAddress == null ? null : c.OriginatorPostalAddress.AddressLine))

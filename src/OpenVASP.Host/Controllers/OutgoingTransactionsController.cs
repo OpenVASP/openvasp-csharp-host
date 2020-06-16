@@ -151,14 +151,15 @@ namespace OpenVASP.Host.Controllers
         /// <param name="id">The Id of the transaction.</param>
         /// <param name="sendingAddress">The (blockchain) sending address.</param>
         /// <param name="transactionHash">The (blockchain) transaction hash.</param>
+        /// <param name="transactionDateTime">The (blockchain) transaction date and time.</param>
         /// <returns>The updated transaction.</returns>
         [HttpPut("{id}/transferDispatch")]
         [ProducesResponseType(typeof(TransactionDetailsModel), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> SendTransferDispatchAsync(
             [FromRoute] string id,
             [FromQuery] string sendingAddress,
-            [FromQuery] string transactionHash
-            )
+            [FromQuery] string transactionHash,
+            [FromQuery] DateTime transactionDateTime)
         {
             var validationErrorsDict = new Dictionary<string, string[]>();
 
@@ -176,7 +177,7 @@ namespace OpenVASP.Host.Controllers
 
             try
             {
-                await _transactionsManager.SendTransferDispatchAsync(id, sendingAddress, transactionHash);
+                await _transactionsManager.SendTransferDispatchAsync(id, sendingAddress, transactionHash, transactionDateTime);
             }
             catch (NullReferenceException)
             {

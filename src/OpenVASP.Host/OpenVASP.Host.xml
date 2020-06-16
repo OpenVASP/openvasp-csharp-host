@@ -62,13 +62,14 @@
             <returns>The created transaction.</returns>
             <exception cref="T:System.InvalidOperationException">In case an invalid Asset was provided.</exception>
         </member>
-        <member name="M:OpenVASP.Host.Controllers.OutgoingTransactionsController.SendTransferDispatchAsync(System.String,System.String,System.String)">
+        <member name="M:OpenVASP.Host.Controllers.OutgoingTransactionsController.SendTransferDispatchAsync(System.String,System.String,System.String,System.DateTime)">
             <summary>
             Send a TransferDispatch message for the given transaction.
             </summary>
             <param name="id">The Id of the transaction.</param>
             <param name="sendingAddress">The (blockchain) sending address.</param>
             <param name="transactionHash">The (blockchain) transaction hash.</param>
+            <param name="transactionDateTime">The (blockchain) transaction date and time.</param>
             <returns>The updated transaction.</returns>
         </member>
         <member name="M:OpenVASP.Host.Controllers.VaspCodesController.GetAutoConfirmedVaspCodesAsync">
