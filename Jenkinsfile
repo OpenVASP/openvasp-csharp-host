@@ -36,12 +36,12 @@ pipeline {
           steps {
             sh '''
             Namespace=$(cat kubernetes/namespace.yaml | grep name |awk \'{print $2}\')
-            NSK=$(kubectl --kubeconfig=/kube/dev get namespace "$Namespace" -o jsonpath={.metadata.name})
+            NSK=$(kubectl --kubeconfig=/kube/dev get namespace "$Namespace" -o jsonpath={.metadata.name} &> /dev/null)
             if [ $NSK ]; then
             echo  Namsespace "$Namespace" Exists
             else
+            kubectl --kubeconfig=/kube/dev apply -f kubernetes/namespace.yaml
             echo no Namespace $Namespace in cluster found - creating
-            kubectl --kubeconfig=/kube/dev apply -f kubernetes/service.yaml
             fi'''
           }
         }
