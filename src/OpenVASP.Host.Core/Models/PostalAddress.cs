@@ -6,7 +6,7 @@ namespace OpenVASP.Host.Core.Models
     {
         public string Street { get; set; }
 
-        public int Building { get; set; }
+        public string Building { get; set; }
 
         public string AddressLine { get; set; }
 

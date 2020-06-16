@@ -1,4 +1,5 @@
-﻿using OpenVASP.Messaging.Messages;
+﻿using System;
+using OpenVASP.Messaging.Messages;
 using OpenVASP.Messaging.Messages.Entities;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -30,6 +31,7 @@ namespace OpenVASP.Host.Core.Services
         Task SendTransferDispatchAsync(
             string id,
             string sendingAddress,
-            string transactionHash);
+            string transactionHash,
+            DateTime transactionDateTime);
     }
 }

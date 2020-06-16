@@ -171,7 +171,8 @@ namespace OpenVASP.Host.Services
         public async Task SendTransferDispatchAsync(
             string id,
             string sendingAddress,
-            string transactionHash)
+            string transactionHash,
+            DateTime transactionDateTime)
         {
             var transaction = await _transactionsRepository.GetAsync(id);
 
@@ -186,10 +187,11 @@ namespace OpenVASP.Host.Services
             if (!_originatorSessionsDict.TryGetValue(transaction.SessionId, out var originatorSession))
                 return; //todo: handle this case.
 
-            await originatorSession.TransferDispatchAsync(transactionHash, sendingAddress);
+            await originatorSession.TransferDispatchAsync(transactionHash, sendingAddress, transactionDateTime);
 
             transaction.TransactionHash = transactionHash;
             transaction.SendingAddress = sendingAddress;
+            transaction.TransactionDateTime = transactionDateTime;
             transaction.Status = TransactionStatus.TransferDispatched;
 
             await _transactionsRepository.UpdateAsync(transaction);
@@ -345,6 +347,7 @@ namespace OpenVASP.Host.Services
 
             transaction.TransactionHash = evt.Message.Transaction.TransactionId;
             transaction.SendingAddress = evt.Message.Transaction.SendingAddress;
+            transaction.TransactionDateTime = evt.Message.Transaction.DateTime;
             transaction.Status = TransactionStatus.TransferDispatched;
 
             await _transactionsRepository.UpdateAsync(transaction);
