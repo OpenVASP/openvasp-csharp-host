@@ -31,7 +31,7 @@ namespace OpenVASP.Host.Models.Response
         public string Status { set; get; }
         public string DestinationAddress { get; set; }
         public string TransactionHash { get; set; }
-        public string TransactionDateTime { get; set; }
+        public DateTime? TransactionDateTime { get; set; }
         public string SendingAddress { get; set; }
         public string SessionDeclineCode { set; get; }
         public string TransferDeclineCode { set; get; }
